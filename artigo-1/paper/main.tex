@@ -1,0 +1,194 @@
+%==============================================================================
+% Artigo 1 - FGA0261 Inteligência Artificial II - 2026.2
+% Formato: IEEE conference (classe IEEEtran, máximo 4 páginas)
+% Entrega: 03/09/2026, pelo Microsoft Teams
+%
+% CONVENÇÃO DESTE ARQUIVO: uma frase por linha.
+% Isso não muda o PDF (o LaTeX junta as linhas) e mantém o git diff legível
+% quando as duas pessoas da dupla editam o mesmo parágrafo.
+%
+% Compilar:  make        (equivale a latexmk -pdf main.tex)
+%==============================================================================
+\documentclass[conference]{IEEEtran}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+% Para hifenização correta em português, descomente a linha abaixo.
+% Exige o pacote texlive-langportuguese no Arch.
+% \usepackage[brazil]{babel}
+
+\usepackage{cite}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{url}
+
+\graphicspath{{figs/}}
+
+\begin{document}
+
+%------------------------------------------------------------------------------
+% TÍTULO E AUTORES
+% Título específico: diga o método e o problema, não "Um estudo sobre IA".
+%------------------------------------------------------------------------------
+\title{Título do Artigo: Método Aplicado a Problema Específico}
+
+\author{
+\IEEEauthorblockN{Heitor Macedo}
+\IEEEauthorblockA{\textit{Departamento de Engenharia de Software} \\
+\textit{Universidade de Brasília --- FCTE} \\
+Brasília, Brasil \\
+matricula@aluno.unb.br}
+\and
+\IEEEauthorblockN{Nome do Colega}
+\IEEEauthorblockA{\textit{Departamento de Engenharia de Software} \\
+\textit{Universidade de Brasília --- FCTE} \\
+Brasília, Brasil \\
+matricula@aluno.unb.br}
+}
+
+\maketitle
+
+%------------------------------------------------------------------------------
+% RESUMO - 150 a 200 palavras.
+% Estrutura: contexto (1 frase), lacuna (1), o que foi feito (2),
+% o número principal do resultado (1), o que isso significa (1).
+% O resumo precisa conter o resultado numérico. Não escreva "os resultados
+% são promissores" sem dizer qual foi o resultado.
+%------------------------------------------------------------------------------
+\begin{abstract}
+Contexto do problema em uma frase.
+Lacuna ou dificuldade que motiva o trabalho.
+Este trabalho avalia \textit{[o quê]} sobre o conjunto de dados \textit{[qual]}, seguindo \textit{[protocolo]}.
+O melhor modelo alcançou \textit{[métrica]} de \textit{[valor]}, contra \textit{[valor]} da linha de base.
+A análise indica \textit{[interpretação]}, com as limitações discutidas na Seção~\ref{sec:discussao}.
+\end{abstract}
+
+\begin{IEEEkeywords}
+aprendizado profundo, [termo 2], [termo 3], [termo 4], [termo 5]
+\end{IEEEkeywords}
+
+%------------------------------------------------------------------------------
+\section{Introdução}
+\label{sec:introducao}
+%------------------------------------------------------------------------------
+% Alvo: ~0,6 página.
+% Parágrafo 1: contexto e por que o problema importa.
+% Parágrafo 2: o que já existe e o que falta (a lacuna).
+% Parágrafo 3: frase explícita de contribuição -- "Este trabalho contribui com...".
+% Parágrafo 4: mapa das seções.
+
+Texto da introdução.
+
+As contribuições deste trabalho são: (i) \textit{[contribuição 1]}; (ii) \textit{[contribuição 2]}.
+
+O restante do artigo está organizado da seguinte forma.
+A Seção~\ref{sec:trabalhos} discute os trabalhos relacionados.
+A Seção~\ref{sec:metodologia} descreve a metodologia adotada.
+A Seção~\ref{sec:resultados} apresenta os resultados.
+A Seção~\ref{sec:discussao} discute os achados e as limitações, e a Seção~\ref{sec:conclusao} conclui o trabalho.
+
+%------------------------------------------------------------------------------
+\section{Trabalhos Relacionados}
+\label{sec:trabalhos}
+%------------------------------------------------------------------------------
+% Alvo: ~0,5 página, 5 a 8 referências.
+% Agrupe por abordagem, não faça uma lista de resumos individuais.
+% Feche a seção dizendo o que este trabalho faz de diferente.
+
+Texto agrupando os trabalhos por abordagem \cite{goodfellow2016deep}.
+
+Diferentemente dos trabalhos citados, este artigo \textit{[o diferencial]}.
+
+%------------------------------------------------------------------------------
+\section{Metodologia}
+\label{sec:metodologia}
+%------------------------------------------------------------------------------
+% Alvo: ~1,0 página. É a seção mais densa e um dos critérios de correção.
+% Regra: outra pessoa tem que conseguir reproduzir o experimento lendo só isto.
+
+\subsection{Conjunto de Dados}
+Origem do conjunto de dados, com citação formal \cite{dataset2024}.
+Número de amostras, número de classes ou faixa da variável alvo, e distribuição entre classes.
+Licença e forma de acesso.
+
+\subsection{Pré-processamento}
+Redimensionamento, normalização, aumento de dados, tratamento de valores faltantes.
+
+\subsection{Protocolo Experimental}
+Divisão em treino, validação e teste, com as proporções e o critério de estratificação.
+A semente aleatória foi fixada em \textit{[valor]} para permitir reprodução.
+Todos os modelos foram avaliados sob o mesmo protocolo.
+
+\subsection{Modelos e Hiperparâmetros}
+Arquitetura de cada modelo, função de perda, otimizador, taxa de aprendizado, tamanho do lote, número de épocas e critério de parada.
+Implementação em PyTorch~\textit{[versão]}.
+
+\subsection{Métricas}
+Métricas escolhidas e a justificativa da escolha diante do problema.
+% Justificar a métrica é um critério de correção explícito do professor.
+% Acurácia em base desbalanceada é o erro mais comum: use F1, AUC-ROC ou
+% acurácia balanceada e diga por quê.
+
+%------------------------------------------------------------------------------
+\section{Resultados}
+\label{sec:resultados}
+%------------------------------------------------------------------------------
+% Alvo: ~0,8 página. Uma tabela principal e uma figura que responda a uma pergunta.
+% Não escreva prosa descrevendo a tabela: comente apenas o que ela não mostra.
+
+\begin{table}[htbp]
+\caption{Desempenho dos modelos avaliados no conjunto de teste.}
+\label{tab:resultados}
+\centering
+\begin{tabular}{lccc}
+\toprule
+\textbf{Modelo} & \textbf{Acurácia} & \textbf{F1 (macro)} & \textbf{Tempo (s)} \\
+\midrule
+Linha de base   & 0,000 & 0,000 & 0 \\
+Modelo A        & 0,000 & 0,000 & 0 \\
+Modelo B        & 0,000 & 0,000 & 0 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+A Tabela~\ref{tab:resultados} apresenta os resultados.
+
+% Descomente quando houver figura em figs/.
+% \begin{figure}[htbp]
+% \centering
+% \includegraphics[width=\columnwidth]{nome-do-arquivo.png}
+% \caption{Legenda que explica o que a figura mostra e por que ela importa.}
+% \label{fig:exemplo}
+% \end{figure}
+
+%------------------------------------------------------------------------------
+\section{Discussão e Limitações}
+\label{sec:discussao}
+%------------------------------------------------------------------------------
+% Alvo: ~0,5 página. É aqui que a nota se separa.
+% Responda: por que o melhor modelo venceu? Onde ele erra? O que o experimento
+% NÃO prova? O plano de ensino cobra a discussão das limitações nominalmente.
+
+Interpretação dos resultados.
+
+Este trabalho tem as seguintes limitações.
+Primeiro, \textit{[limitação de dados, escopo ou generalização]}.
+Segundo, \textit{[limitação de protocolo -- execução única, ausência de teste estatístico, busca limitada de hiperparâmetros]}.
+Terceiro, \textit{[limitação de validade externa]}.
+
+%------------------------------------------------------------------------------
+\section{Conclusão}
+\label{sec:conclusao}
+%------------------------------------------------------------------------------
+% Alvo: ~0,2 página, 3 a 4 frases. Nenhum resultado novo aqui.
+
+Conclusão do trabalho e uma direção de trabalho futuro.
+
+%------------------------------------------------------------------------------
+% REFERÊNCIAS - 10 a 15 itens, incluindo obrigatoriamente o conjunto de dados.
+%------------------------------------------------------------------------------
+\bibliographystyle{IEEEtran}
+\bibliography{refs}
+
+\end{document}

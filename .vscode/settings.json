@@ -1,0 +1,41 @@
+{
+  "latex-workshop.latex.outDir": "%DIR%",
+  "latex-workshop.latex.autoBuild.run": "onFileChange",
+  "latex-workshop.latex.recipe.default": "lastUsed",
+  "latex-workshop.latex.tools": [
+    {
+      "name": "latexmk",
+      "command": "latexmk",
+      "args": [
+        "-pdf",
+        "-synctex=1",
+        "-interaction=nonstopmode",
+        "-file-line-error",
+        "-outdir=%OUTDIR%",
+        "%DOC%"
+      ],
+      "env": {}
+    }
+  ],
+  "latex-workshop.latex.recipes": [
+    { "name": "latexmk (pdf + bibtex)", "tools": ["latexmk"] }
+  ],
+  "latex-workshop.latex.search.rootFiles.include": ["artigo-*/paper/main.tex"],
+  "latex-workshop.view.pdf.viewer": "tab",
+  "latex-workshop.message.error.show": true,
+  "latex-workshop.latex.autoClean.run": "never",
+  "[latex]": {
+    "editor.wordWrap": "on",
+    "editor.tabSize": 2,
+    "editor.formatOnSave": false,
+    "editor.quickSuggestions": { "comments": false, "strings": false, "other": false }
+  },
+  "[bibtex]": {
+    "editor.tabSize": 2
+  },
+  "files.associations": {
+    "*.tex": "latex",
+    "*.bib": "bibtex"
+  },
+  "ltex.language": "pt-BR"
+}

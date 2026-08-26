@@ -1,0 +1,42 @@
+# --- LaTeX ---
+*.aux
+*.bbl
+*.blg
+*.fdb_latexmk
+*.fls
+*.log
+*.out
+*.synctex.gz
+*.toc
+*.nav
+*.snm
+*.run.xml
+*.bcf
+*.lof
+*.lot
+*.spl
+main.pdf
+artigo-*/paper/*.pdf
+
+# --- Python / experimentos ---
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.ipynb_checkpoints/
+*.pt
+*.pth
+*.ckpt
+runs/
+wandb/
+mlruns/
+
+# --- dados brutos (baixe com script, não versione) ---
+artigo-*/src/data/
+*.csv
+*.parquet
+*.npz
+
+# --- SO / editor ---
+.DS_Store
+*.swp
