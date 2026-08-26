@@ -40,3 +40,12 @@ artigo-*/src/data/
 # --- SO / editor ---
 .DS_Store
 *.swp
+
+# --- Claude Code (local, não versionado) ---
+.claude/
+
+# --- resultados dos experimentos ---
+# São pequenos e alimentam a tabela do artigo, então abrem exceção ao *.csv acima.
+!artigo-*/src/results/
+!artigo-*/src/results/*.csv
+!artigo-*/src/results/*.json

@@ -4,21 +4,24 @@
 
 ## Dupla
 
-| Integrante | Matrícula | Responsabilidade |
-| ---------- | --------- | ---------------- |
-| Heitor Macedo | — | — |
-| (colega) | — | — |
+Divisão em fatia vertical: cada um leva modelos **e** seções, para que ninguém
+fique bloqueado esperando o outro e os dois conheçam o artigo inteiro na
+apresentação.
 
-Combinar antes de começar quem escreve o quê. Divisão que costuma funcionar:
-uma pessoa fica com Introdução + Trabalhos Relacionados + Conclusão, a outra com
-Metodologia + Resultados, e a Discussão é escrita a quatro mãos no final.
+| Integrante | GitHub | Matrícula | Responsabilidade |
+| ---------- | ------ | --------- | ---------------- |
+| Heitor Macedo | `HeitorM50` | — | pipeline de dados, linha de base, transfer learning · Metodologia, Resumo, Conclusão |
+| Gustavo | `guxvr` | — | loop de treino e métricas, CNN do zero, figuras · Introdução, Trabalhos Relacionados, Resultados, `refs.bib` |
+
+A quatro mãos: decisão do tema, Discussão e Limitações, revisão final e entrega.
+
+O andamento fica nas issues do GitHub, no milestone `Artigo 1 — 03/09/2026`.
 
 ## Decisões em aberto
 
-- [ ] **Rota temática** — I (comparação entre algoritmos) ou II (aplicação).
-      Para o Artigo 1 a Rota I costuma ser mais segura: o escopo é fechado
-      (N modelos, um protocolo) e o resultado sempre existe, mesmo que seja
-      "a arquitetura simples ganhou".
+- [x] **Rota temática** — **I, comparação entre algoritmos** (decidido em 26/08/2026).
+      O escopo é fechado (N modelos, um protocolo) e o resultado sempre existe,
+      mesmo que seja "a arquitetura simples ganhou".
 - [ ] **Dataset público** — precisa ser público, citável e pequeno o bastante
       para treinar várias vezes até 03/09.
 - [ ] **Modelos a comparar** — se Rota I, no mínimo três, incluindo uma linha de
@@ -33,6 +36,13 @@ Anotar aqui, com data, cada decisão fechada. Isso vira material da seção de
 Metodologia depois.
 
 - **26/08/2026** — repositório e esqueleto LaTeX criados.
+- **26/08/2026** — rota temática fechada: **Rota I**, comparação entre algoritmos.
+- **26/08/2026** — divisão do trabalho em fatia vertical (tabela acima), com as
+  issues abertas no GitHub e milestone vencendo 02/09, um dia antes do prazo real.
+- **26/08/2026** — repositório publicado em `github.com/HeitorM50/IA2-2026.2`
+  (público), com `guxvr` como colaborador.
+- **[pendente]** — tema, conjunto de dados, modelos comparados e métrica principal:
+  ver a issue #1. É o bloqueio de tudo; precisa fechar até 27/08.
 
 ## Checklist antes de entregar
 
