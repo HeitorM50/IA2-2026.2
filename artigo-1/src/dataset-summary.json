@@ -1,0 +1,117 @@
+{
+  "augmentation": {
+    "color_jitter": false,
+    "horizontal_flip_probability": 0.5,
+    "rotation_degrees": 15.0,
+    "train_only": true,
+    "vertical_flip_probability": 0.5
+  },
+  "canonical_seeds": [
+    42,
+    1337,
+    2026
+  ],
+  "class_names_en": [
+    "basophil",
+    "eosinophil",
+    "erythroblast",
+    "immature granulocytes(myelocytes, metamyelocytes and promyelocytes)",
+    "lymphocyte",
+    "monocyte",
+    "neutrophil",
+    "platelet"
+  ],
+  "class_names_pt": [
+    "basófilo",
+    "eosinófilo",
+    "eritroblasto",
+    "granulócito imaturo",
+    "linfócito",
+    "monócito",
+    "neutrófilo",
+    "plaqueta"
+  ],
+  "dataset": "bloodmnist",
+  "doi": "10.5281/zenodo.10519652",
+  "medmnist_version": "3.0.2",
+  "normalization": {
+    "mean_rgb": [
+      0.7960542388588133,
+      0.659596857538658,
+      0.6963490531573381
+    ],
+    "source_split": "train",
+    "std_rgb": [
+      0.22328310770726165,
+      0.25463025868704353,
+      0.09473569252657701
+    ]
+  },
+  "seed_used_for_inspection": 42,
+  "size": 64,
+  "splits": {
+    "test": {
+      "class_counts": [
+        244,
+        624,
+        311,
+        579,
+        243,
+        284,
+        666,
+        470
+      ],
+      "fingerprint_sha256": "ebf4cb50dc8bd325d21b2e6f22fff56781b7917ec01d610f213047729479a057",
+      "sample_image_dtype": "torch.float32",
+      "sample_image_shape": [
+        3,
+        64,
+        64
+      ],
+      "sample_target_dtype": "torch.int64",
+      "size": 3421
+    },
+    "train": {
+      "class_counts": [
+        852,
+        2181,
+        1085,
+        2026,
+        849,
+        993,
+        2330,
+        1643
+      ],
+      "fingerprint_sha256": "b3855b67bc5c74807d5439ccb10c15a713f330861b474300bac61e32547a2e42",
+      "sample_image_dtype": "torch.float32",
+      "sample_image_shape": [
+        3,
+        64,
+        64
+      ],
+      "sample_target_dtype": "torch.int64",
+      "size": 11959
+    },
+    "val": {
+      "class_counts": [
+        122,
+        312,
+        155,
+        290,
+        122,
+        143,
+        333,
+        235
+      ],
+      "fingerprint_sha256": "602bc02fdc5d07faaefc4f477577b0fea0b1ce7a998d0b938e7553194dece719",
+      "sample_image_dtype": "torch.float32",
+      "sample_image_shape": [
+        3,
+        64,
+        64
+      ],
+      "sample_target_dtype": "torch.int64",
+      "size": 1712
+    }
+  }
+}

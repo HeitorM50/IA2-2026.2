@@ -69,6 +69,20 @@ Metodologia depois.
   celulares no BloodMNIST, em que medida uma CNN compacta treinada do zero e uma
   ResNet18 pré-treinada no ImageNet-1K superam uma regressão logística em F1 macro,
   sob o mesmo protocolo experimental?**
+- **29/08/2026 — pipeline de dados:** implementado o download automático com
+  `medmnist==3.0.2`, preservando os splits oficiais. A normalização RGB é calculada
+  exclusivamente sobre os 11.959 exemplos de treino: média
+  `(0,796054; 0,659597; 0,696349)` e desvio padrão
+  `(0,223283; 0,254630; 0,094736)`. O treino recebe rotações de até 15 graus e
+  espelhamentos horizontal e vertical com probabilidade 0,5; validação e teste
+  recebem somente conversão para tensor e normalização. Alterações de cor não são
+  usadas porque a coloração microscópica pode carregar informação discriminativa.
+- **29/08/2026 — distribuição observada:** na ordem basófilo, eosinófilo,
+  eritroblasto, granulócito imaturo, linfócito, monócito, neutrófilo e plaqueta, as
+  contagens foram treino `(852, 2181, 1085, 2026, 849, 993, 2330, 1643)`, validação
+  `(122, 312, 155, 290, 122, 143, 333, 235)` e teste
+  `(244, 624, 311, 579, 243, 284, 666, 470)`. As impressões digitais dos splits são
+  invariantes entre as seeds; somente embaralhamento e aumento do treino variam.
 
 ## Checklist antes de entregar
 
