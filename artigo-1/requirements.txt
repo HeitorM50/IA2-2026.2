@@ -4,7 +4,7 @@ torch>=2.5,<3
 torchvision>=0.20,<1
 medmnist>=3.0,<4
 Pillow>=10,<13
+scikit-learn>=1.5,<2
 
 # Testes locais.
 pytest>=8,<10
-

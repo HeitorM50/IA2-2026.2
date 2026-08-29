@@ -83,6 +83,12 @@ Metodologia depois.
   `(122, 312, 155, 290, 122, 143, 333, 235)` e teste
   `(244, 624, 311, 579, 243, 284, 666, 470)`. As impressões digitais dos splits são
   invariantes entre as seeds; somente embaralhamento e aumento do treino variam.
+- **29/08/2026 — protocolo de treinamento:** definido um único loop com AdamW,
+  entropia cruzada sem pesos, no máximo 30 épocas e parada antecipada após cinco
+  épocas sem melhora mínima de `1e-4` no F1 macro de validação. As taxas iniciais
+  são `1e-3` para regressão logística e CNN; na ResNet18, `1e-4` no backbone e
+  `1e-3` na cabeça. O melhor estado permanece somente em memória e o teste é
+  consultado uma vez, depois de restaurada a melhor época.
 
 ## Checklist antes de entregar
 

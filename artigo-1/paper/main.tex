@@ -141,15 +141,17 @@ Métricas escolhidas e a justificativa da escolha diante do problema.
 \caption{Desempenho dos modelos avaliados no conjunto de teste.}
 \label{tab:resultados}
 \centering
-\begin{tabular}{lccc}
+\resizebox{\columnwidth}{!}{%
+\begin{tabular}{lccccc}
 \toprule
-\textbf{Modelo} & \textbf{Acurácia} & \textbf{F1 (macro)} & \textbf{Tempo (s)} \\
+\textbf{Modelo} & \textbf{F1 (macro)} & \textbf{Acc. bal.} & \textbf{Tempo (s)} & \textbf{Parâm. totais} & \textbf{Parâm. treináveis} \\
 \midrule
-Linha de base   & 0,000 & 0,000 & 0 \\
-Modelo A        & 0,000 & 0,000 & 0 \\
-Modelo B        & 0,000 & 0,000 & 0 \\
+Regressão logística & 0,000 & 0,000 & 0 & 0 & 0 \\
+CNN compacta        & 0,000 & 0,000 & 0 & 0 & 0 \\
+ResNet18             & 0,000 & 0,000 & 0 & 0 & 0 \\
 \bottomrule
 \end{tabular}
+}
 \end{table}
 
 A Tabela~\ref{tab:resultados} apresenta os resultados.
