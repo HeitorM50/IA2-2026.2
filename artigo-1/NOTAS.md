@@ -17,18 +17,23 @@ A quatro mãos: decisão do tema, Discussão e Limitações, revisão final e en
 
 O andamento fica nas issues do GitHub, no milestone `Artigo 1 — 03/09/2026`.
 
-## Decisões em aberto
+## Decisões do experimento
 
 - [x] **Rota temática** — **I, comparação entre algoritmos** (decidido em 26/08/2026).
       O escopo é fechado (N modelos, um protocolo) e o resultado sempre existe,
       mesmo que seja "a arquitetura simples ganhou".
-- [ ] **Dataset público** — precisa ser público, citável e pequeno o bastante
-      para treinar várias vezes até 03/09.
-- [ ] **Modelos a comparar** — se Rota I, no mínimo três, incluindo uma linha de
-      base simples que não seja rede neural.
-- [ ] **Métrica principal** — e a justificativa da escolha, que é critério de correção.
-- [ ] **Onde treinar** — máquina local ou Google Colab. Se o dataset for de imagens,
-      Colab com GPU economiza muito tempo.
+- [x] **Dataset público** — **BloodMNIST**, subconjunto RGB de 64 × 64 pixels da
+      coleção MedMNIST+, com 17.092 imagens microscópicas de oito tipos de células
+      sanguíneas, splits oficiais e distribuição pública no Zenodo com DOI.
+- [x] **Modelos a comparar** — regressão logística multinomial, CNN compacta
+      treinada do zero e ResNet18 pré-treinada no ImageNet-1K com ajuste fino.
+- [x] **Métrica principal** — F1 macro; acurácia, acurácia balanceada, tempo de
+      treino e número de parâmetros serão métricas secundárias.
+- [x] **Onde treinar** — Google Colab com GPU.
+- [x] **Pergunta de pesquisa** — Em classificação multiclasse de tipos celulares
+      no BloodMNIST, em que medida uma CNN compacta treinada do zero e uma ResNet18
+      pré-treinada no ImageNet-1K superam uma regressão logística em F1 macro, sob
+      o mesmo protocolo experimental?
 
 ## Registro de decisões
 
@@ -41,8 +46,29 @@ Metodologia depois.
   issues abertas no GitHub e milestone vencendo 02/09, um dia antes do prazo real.
 - **26/08/2026** — repositório publicado em `github.com/HeitorM50/IA2-2026.2`
   (público), com `guxvr` como colaborador.
-- **[pendente]** — tema, conjunto de dados, modelos comparados e métrica principal:
-  ver a issue #1. É o bloqueio de tudo; precisa fechar até 27/08.
+- **29/08/2026 — conjunto de dados:** escolhido o **BloodMNIST 64 × 64**, da
+  coleção MedMNIST+, com 17.092 imagens RGB de células sanguíneas em oito classes
+  e splits oficiais de treino, validação e teste (11.959/1.712/3.421). A coleção é
+  pública, tem DOI `10.5281/zenodo.10519652` e é pequena o bastante para as nove
+  execuções previstas. Os splits serão mantidos fixos entre modelos e seeds; as
+  seeds `42`, `1337` e `2026` controlarão inicialização, ordem dos lotes e aumento
+  de dados, evitando misturar variação de amostragem com variação de treinamento.
+- **29/08/2026 — modelos:** serão comparados (A) **regressão logística
+  multinomial**, a linha de base não neural sobre os pixels normalizados; (B) uma
+  **CNN compacta treinada do zero**; e (C) uma **ResNet18 pré-treinada no
+  ImageNet-1K**, com a camada classificadora substituída e ajuste fino de toda a
+  rede. Os três receberão imagens 64 × 64 e serão avaliados pelo mesmo pipeline.
+- **29/08/2026 — métrica principal:** adotado o **F1 macro**, pois as frequências
+  das oito classes não são perfeitamente uniformes e cada tipo celular deve ter o
+  mesmo peso no resultado; a média macro também penaliza modelos que favorecem
+  classes frequentes e considera simultaneamente precisão e revocação. Acurácia,
+  acurácia balanceada, tempo de treino e número de parâmetros serão secundárias.
+- **29/08/2026 — ambiente:** treinamento no **Google Colab com GPU**, usando um
+  único notebook/script e o mesmo ambiente para os nove pares modelo × seed.
+- **29/08/2026 — pergunta de pesquisa:** **Em classificação multiclasse de tipos
+  celulares no BloodMNIST, em que medida uma CNN compacta treinada do zero e uma
+  ResNet18 pré-treinada no ImageNet-1K superam uma regressão logística em F1 macro,
+  sob o mesmo protocolo experimental?**
 
 ## Checklist antes de entregar
 
