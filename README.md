@@ -30,6 +30,8 @@ passa a acontecer a cada salvamento, com preview lado a lado.
 - `artigo-1/paper/` — o artigo em LaTeX.
 - `artigo-1/src/` — código dos experimentos.
 - `artigo-1/NOTAS.md` — decisões da dupla e checklist de entrega.
+- `artigo-1/PLANO-EXPERIMENTAL.md` — pergunta de pesquisa, protocolo e fluxo de
+  desenvolvimento local com execução final no Colab.
 
 ## Prazos
 
