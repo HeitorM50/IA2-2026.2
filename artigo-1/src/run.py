@@ -87,6 +87,14 @@ def _training_config_name(model_name: str) -> str:
         raise ValueError(f"Modelo desconhecido: {model_name!r}.") from error
 
 
+def _inside_canonical_results(path: Path) -> bool:
+    try:
+        path.resolve().relative_to(DEFAULT_RESULTS_DIR.resolve())
+    except ValueError:
+        return False
+    return True
+
+
 def _validate_json_value(value: Any, path: str = "result") -> None:
     if value is None:
         raise ValueError(f"{path} não pode ser null.")
@@ -141,6 +149,7 @@ def run_experiments(
     *,
     resume: bool = False,
     overwrite: bool = False,
+    quick: bool = False,
 ) -> list[Path]:
     """Executa a grade solicitada e grava cada resultado assim que termina."""
 
@@ -148,6 +157,13 @@ def run_experiments(
         raise ValueError("resume e overwrite são mutuamente exclusivos.")
     if not model_names or not seeds:
         raise ValueError("Informe ao menos um modelo e uma seed.")
+    if quick and "toy" in model_names:
+        raise ValueError("Execuções rápidas se aplicam somente aos modelos reais.")
+    if quick and _inside_canonical_results(output_dir):
+        raise ValueError(
+            "Execuções rápidas não podem ser gravadas no diretório canônico "
+            f"{DEFAULT_RESULTS_DIR}. Escolha outro --output-dir."
+        )
 
     output_paths: list[Path] = []
     for model_name in model_names:
@@ -158,6 +174,8 @@ def run_experiments(
             raise ValueError(
                 f"Configuração desconhecida para {model_name!r}: {config_name!r}."
             ) from error
+        if quick:
+            training_config = training_config.for_quick_run()
         for seed in seeds:
             output_path = output_dir / f"{model_name}-seed{seed}.json"
             if output_path.exists():
@@ -201,10 +219,25 @@ def _parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     )
     parser.add_argument("--seeds", nargs="+", type=int)
     parser.add_argument("--output-dir", type=Path, default=DEFAULT_RESULTS_DIR)
+    parser.add_argument(
+        "--quick",
+        action="store_true",
+        help=(
+            "limita épocas e lotes para validar modelos reais; exige um "
+            "--output-dir fora de src/results"
+        ),
+    )
     behavior = parser.add_mutually_exclusive_group()
     behavior.add_argument("--resume", action="store_true")
     behavior.add_argument("--overwrite", action="store_true")
-    return parser.parse_args(argv)
+    args = parser.parse_args(argv)
+    if args.quick and args.smoke:
+        parser.error("--quick deve ser usado com --models, não com --smoke")
+    if args.quick and _inside_canonical_results(args.output_dir):
+        parser.error(
+            "--quick exige um --output-dir fora do diretório canônico src/results"
+        )
+    return args
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -221,6 +254,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         args.output_dir,
         resume=args.resume,
         overwrite=args.overwrite,
+        quick=args.quick,
     )
     return 0
 
