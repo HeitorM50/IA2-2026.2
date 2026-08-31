@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, replace
 from pathlib import Path
 from types import MappingProxyType
 from typing import Any, Mapping
@@ -93,6 +93,17 @@ class TrainingConfig:
         """Converte a configuração para um objeto diretamente serializável."""
 
         return asdict(self)
+
+    def for_quick_run(self) -> TrainingConfig:
+        """Limita uma configuração para uma verificação local não canônica."""
+
+        return replace(
+            self,
+            max_epochs=2,
+            patience=1,
+            max_train_batches=10,
+            max_eval_batches=5,
+        )
 
 
 @dataclass(frozen=True)
