@@ -131,6 +131,12 @@ Metodologia depois.
   macro subiu de 0,5316 para 0,7386. O JSON confirmou 11.180.616 parâmetros
   totais e treináveis e permaneceu fora de `src/results`, pois essa execução
   truncada valida o código, mas não substitui os resultados canônicos do Colab.
+- **01/09/2026 — consolidação e figura principal:** os nove resultados canônicos
+  serão validados automaticamente antes da análise. O resumo usará média e desvio
+  padrão amostral entre as três seeds. A figura principal será a matriz de
+  confusão de teste do modelo com maior F1 macro médio, somada entre as três
+  execuções e normalizada por classe verdadeira. Assim, a tabela quantifica o
+  desempenho global e a figura revela quais tipos celulares ainda são confundidos.
 
 ## Checklist antes de entregar
 

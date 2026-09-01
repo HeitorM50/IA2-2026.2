@@ -115,8 +115,10 @@ Serão métricas secundárias:
 
 A tabela principal apresentará média e desvio padrão das três seeds, com F1 macro
 na primeira coluna e ao menos uma medida de custo.
-A figura principal deverá mostrar informação que a tabela não mostra, de preferência
-a matriz de confusão do melhor modelo ou o desempenho por classe.
+A figura principal será a matriz de confusão de teste do modelo com maior F1 macro
+médio. As matrizes das três seeds serão somadas e normalizadas por classe
+verdadeira, mostrando quais tipos celulares ainda são confundidos sem repetir a
+comparação global já apresentada pela tabela.
 
 Cada execução produzirá um JSON identificado por modelo e seed.
 Os nove JSONs alimentarão automaticamente `resumo.csv`, a tabela e as figuras;
@@ -208,7 +210,6 @@ pergunta de pesquisa:
 - aumentos de dados apropriados para células sanguíneas;
 - tamanho do lote, épocas máximas e paciência da parada antecipada;
 - otimizador e taxas de aprendizado de cada modelo;
-- critério para escolher a figura principal.
 
 Até os três resultados básicos existirem, não serão adicionados outros datasets,
 arquiteturas ou estudos de ablação.
