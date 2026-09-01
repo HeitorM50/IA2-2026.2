@@ -5,10 +5,11 @@ from pathlib import Path
 
 import pytest
 import torch
+from torch import nn
 from torch.utils.data import DataLoader, TensorDataset
 
 from src.config import DATA_CONFIG, TRAINING_CONFIGS
-from src.run import DEFAULT_RESULTS_DIR, main, run_experiments
+from src.run import DEFAULT_RESULTS_DIR, _load_model, main, run_experiments
 
 
 def _image_loaders() -> tuple[DataLoader, DataLoader, DataLoader]:
@@ -68,9 +69,23 @@ def test_resume_rejects_corrupt_result(tmp_path: Path) -> None:
         run_experiments(["toy"], [42], tmp_path, resume=True)
 
 
-def test_unimplemented_model_reports_clear_message(tmp_path: Path) -> None:
-    with pytest.raises(RuntimeError, match="ainda não foi implementado"):
-        run_experiments(["resnet18"], [42], tmp_path)
+def test_resnet18_loads_through_common_model_registry(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    expected_model = nn.Sequential(
+        nn.Flatten(start_dim=1),
+        nn.Linear(3 * 64 * 64, DATA_CONFIG.num_classes),
+    )
+    expected_loaders = _image_loaders()
+    monkeypatch.setattr("src.models.transfer.build", lambda: expected_model)
+    monkeypatch.setattr(
+        "src.run.get_dataloaders", lambda seed: expected_loaders
+    )
+
+    model, loaders = _load_model("resnet18", 42)
+
+    assert model is expected_model
+    assert loaders is expected_loaders
 
 
 def test_quick_config_preserves_model_hyperparameters() -> None:

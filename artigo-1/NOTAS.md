@@ -117,6 +117,20 @@ Metodologia depois.
   sobreajuste. O JSON de desenvolvimento permaneceu fora de `src/results`, como
   exigido pela proteção do orquestrador; os resultados canônicos serão produzidos
   no Colab na issue de execução final.
+- **01/09/2026 — transferência de aprendizado:** a ResNet18 é carregada pela API
+  oficial do TorchVision com `ResNet18_Weights.IMAGENET1K_V1`, pesos treinados no
+  ImageNet-1K. A camada classificadora original de mil classes é substituída por
+  uma camada linear de 512 entradas e oito logits. Todos os 11.180.616 parâmetros
+  permanecem treináveis; o AdamW usa taxa `1e-4` no backbone e `1e-3` na nova
+  cabeça. O modelo recebe diretamente as imagens RGB 64 × 64 com a normalização
+  comum calculada apenas no treino, sem introduzir pré-processamento exclusivo.
+- **01/09/2026 — execução curta local da ResNet18:** a seed 42 percorreu o
+  pipeline comum em CPU por duas épocas, limitada a dez lotes de treino e cinco
+  lotes de avaliação por época, e levou 78,20 segundos. A perda de treino caiu de
+  1,5241 para 0,7444; na validação, a perda caiu de 1,0526 para 0,5722 e o F1
+  macro subiu de 0,5316 para 0,7386. O JSON confirmou 11.180.616 parâmetros
+  totais e treináveis e permaneceu fora de `src/results`, pois essa execução
+  truncada valida o código, mas não substitui os resultados canônicos do Colab.
 
 ## Checklist antes de entregar
 
