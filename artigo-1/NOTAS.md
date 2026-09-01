@@ -89,6 +89,34 @@ Metodologia depois.
   são `1e-3` para regressão logística e CNN; na ResNet18, `1e-4` no backbone e
   `1e-3` na cabeça. O melhor estado permanece somente em memória e o teste é
   consultado uma vez, depois de restaurada a melhor época.
+- **31/08/2026 — arquitetura da CNN:** implementada uma CNN própria com três
+  blocos convolucionais de 32, 64 e 128 canais. Cada bloco possui duas
+  convoluções `3 x 3` com preenchimento de um pixel, normalização em lote e ReLU,
+  seguidas por max pooling `2 x 2`. Os kernels pequenos extraem padrões locais de
+  forma, textura e coloração com menos parâmetros que kernels maiores; a segunda
+  convolução amplia o campo receptivo antes da redução espacial. A duplicação dos
+  canais compensa a perda gradual de resolução, enquanto o pooling reduz o custo
+  e introduz tolerância a pequenos deslocamentos. A normalização em lote
+  estabiliza as ativações de uma rede inicializada aleatoriamente e a ReLU fornece
+  a não linearidade necessária para superar a fronteira linear da linha de base.
+- **31/08/2026 — cabeça e regularização da CNN:** depois dos três blocos, pooling
+  médio global adaptativo transforma os 128 mapas em um vetor de 128 elementos,
+  evitando uma camada densa grande e permitindo manter a rede em 288.488
+  parâmetros treináveis. Dropout de 0,30 precede a camada linear de oito logits;
+  não se aplica softmax no modelo porque a entropia cruzada o incorpora. Além do
+  dropout, a CNN usa weight decay de `1e-4` no AdamW e o aumento geométrico já
+  definido no pipeline. As três decisões limitam sobreajuste sem introduzir dados
+  externos nem conhecimento prévio; todos os pesos são aprendidos do zero.
+- **31/08/2026 — execução curta local da CNN:** a seed 42 percorreu o pipeline
+  comum em CPU por duas épocas, limitada a dez lotes de treino e cinco lotes de
+  avaliação por época, e levou 31,94 segundos. A perda de treino caiu de 1,5704
+  para 1,0422, enquanto a perda de validação subiu de 2,1292 para 2,1809; o F1
+  macro de validação passou de 0,0296 para 0,0820. A divergência entre as perdas
+  foi observada e é compatível com um gap inicial de generalização, mas a execução
+  truncada serve somente para validar o código e não sustenta uma conclusão sobre
+  sobreajuste. O JSON de desenvolvimento permaneceu fora de `src/results`, como
+  exigido pela proteção do orquestrador; os resultados canônicos serão produzidos
+  no Colab na issue de execução final.
 
 ## Checklist antes de entregar
 

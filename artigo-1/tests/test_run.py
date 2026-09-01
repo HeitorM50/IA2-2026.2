@@ -70,7 +70,7 @@ def test_resume_rejects_corrupt_result(tmp_path: Path) -> None:
 
 def test_unimplemented_model_reports_clear_message(tmp_path: Path) -> None:
     with pytest.raises(RuntimeError, match="ainda não foi implementado"):
-        run_experiments(["cnn"], [42], tmp_path)
+        run_experiments(["resnet18"], [42], tmp_path)
 
 
 def test_quick_config_preserves_model_hyperparameters() -> None:
@@ -118,6 +118,38 @@ def test_quick_cli_loads_baseline_and_writes_noncanonical_json(
     assert result["hyperparameters"]["max_epochs"] == 2
     assert result["hyperparameters"]["max_train_batches"] == 10
     assert result["hyperparameters"]["max_eval_batches"] == 5
+    assert not list(tmp_path.glob("*.pt"))
+    assert not list(tmp_path.glob("*.tmp"))
+
+
+def test_quick_cli_loads_cnn_through_common_training_loop(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr("src.run.get_dataloaders", lambda seed: _image_loaders())
+
+    assert (
+        main(
+            [
+                "--models",
+                "cnn",
+                "--seeds",
+                "42",
+                "--quick",
+                "--output-dir",
+                str(tmp_path),
+            ]
+        )
+        == 0
+    )
+
+    result = json.loads((tmp_path / "cnn-seed42.json").read_text("utf-8"))
+    assert result["model"] == "cnn"
+    assert result["seed"] == 42
+    assert result["parameters"] == {"total": 288_488, "trainable": 288_488}
+    assert result["hyperparameters"]["weight_decay"] == 1e-4
+    assert result["hyperparameters"]["max_epochs"] == 2
+    assert len(result["training"]["history"]) == 2
+    assert len(result["test"]["confusion_matrix"]) == DATA_CONFIG.num_classes
     assert not list(tmp_path.glob("*.pt"))
     assert not list(tmp_path.glob("*.tmp"))
 
