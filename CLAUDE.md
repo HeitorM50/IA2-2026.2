@@ -160,8 +160,8 @@ No VS Code, a extensão `james-yu.latex-workshop` compila com o mesmo `latexmk`
 ## 8. Estado atual
 
 - [x] Repositório e esqueleto LaTeX do Artigo 1 montados
-- [ ] Definir rota temática do Artigo 1 (I ou II)
-- [ ] Escolher e citar o dataset público
+- [x] Definir rota temática do Artigo 1 (I ou II)
+- [x] Escolher e citar o dataset público
 - [ ] Implementar os experimentos em `artigo-1/src/`
 - [ ] Escrever o artigo
 - [ ] Revisar contra os 4 critérios de correção e o limite de 4 páginas
