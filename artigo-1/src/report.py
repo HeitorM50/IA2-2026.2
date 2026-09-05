@@ -392,7 +392,7 @@ def _write_confusion_figure(matrix: np.ndarray, path: Path) -> None:
             axis.text(
                 column,
                 row,
-                f"{value:.0%}",
+                f"{value * 100:.0f}",
                 ha="center",
                 va="center",
                 fontsize=8,
