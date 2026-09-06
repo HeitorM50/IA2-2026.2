@@ -189,6 +189,7 @@ def run_experiments(
                         "Use --resume ou --overwrite."
                     )
 
+            print(f"iniciando execução: {model_name} seed={seed}", flush=True)
             model, loaders = _load_model(model_name, seed)
             result = train_eval(
                 model,

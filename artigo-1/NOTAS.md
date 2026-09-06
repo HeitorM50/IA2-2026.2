@@ -131,6 +131,23 @@ Metodologia depois.
   macro subiu de 0,5316 para 0,7386. O JSON confirmou 11.180.616 parâmetros
   totais e treináveis e permaneceu fora de `src/results`, pois essa execução
   truncada valida o código, mas não substitui os resultados canônicos do Colab.
+- **01/09/2026 — consolidação e figura principal:** os nove resultados canônicos
+  serão validados automaticamente antes da análise. O resumo usará média e desvio
+  padrão amostral entre as três seeds. A figura principal será a matriz de
+  confusão de teste do modelo com maior F1 macro médio, somada entre as três
+  execuções e normalizada por classe verdadeira. Assim, a tabela quantifica o
+  desempenho global e a figura revela quais tipos celulares ainda são confundidos.
+- **05/09/2026 — ambiente da execução canônica:** as nove execuções foram feitas
+  no mesmo runtime Google Colab com GPU Tesla T4, no commit
+  `7ac7cc58520c8606e0f07fdb19e5a7aff1d6d857` e com a árvore Git limpa. O ambiente
+  usou Python 3.13.15, PyTorch 2.11.0+cu128, TorchVision 0.26.0+cu128 e CUDA 12.8.
+  As nove execuções somaram aproximadamente 40,2 minutos de treinamento.
+- **05/09/2026 — resultados canônicos:** em F1 macro de teste, a regressão
+  logística obteve `0,7457 ± 0,0354`, a CNN compacta `0,9761 ± 0,0075` e a
+  ResNet18 `0,9819 ± 0,0032`. A ResNet18 apresentou o maior desempenho médio e a
+  menor variação entre seeds, superando a CNN em cerca de 0,58 ponto percentual;
+  a pequena diferença entre os modelos profundos deverá ser ponderada pelo custo
+  e pela complexidade na Discussão.
 
 ## Checklist antes de entregar
 

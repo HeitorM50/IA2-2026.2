@@ -36,7 +36,7 @@ def _assert_no_null_or_non_finite(value) -> None:
             _assert_no_null_or_non_finite(child)
 
 
-def test_linear_model_passes_through_train_eval_and_tests_once() -> None:
+def test_linear_model_passes_through_train_eval_and_tests_once(capsys) -> None:
     model, (train_loader, val_loader, raw_test_loader) = _toy_experiment(42)
     test_loader = CountingLoader(raw_test_loader)
     config = TrainingConfig(
@@ -64,6 +64,7 @@ def test_linear_model_passes_through_train_eval_and_tests_once() -> None:
     assert result["parameters"] == {"total": 72, "trainable": 72}
     assert test_loader.iterations == 1
     assert len(result["test"]["confusion_matrix"]) == 8
+    assert "toy seed=42 época=1/8" in capsys.readouterr().out
     _assert_no_null_or_non_finite(result)
 
 

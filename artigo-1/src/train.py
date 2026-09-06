@@ -285,6 +285,12 @@ def train_eval(
                 ],
             }
         )
+        print(
+            f"{model_name} seed={seed} época={epoch}/{config.max_epochs} "
+            f"train_loss={train_loss:.4f} val_loss={validation_loss:.4f} "
+            f"val_f1_macro={validation_metrics['f1_macro']:.4f}",
+            flush=True,
+        )
 
         score = validation_metrics["f1_macro"]
         if score > best_score + config.min_delta:
