@@ -58,12 +58,24 @@ print("Resultados:", RUN_ROOT)
 ```python
 import os
 import subprocess
+from pathlib import Path
 
 article_dir = os.path.join(os.environ["REPO_DIR"], "artigo-1")
 subprocess.run(
-    ["python", "-m", "pip", "install", "-r", "requirements.txt"],
+    ["python", "-m", "pip", "install", "-r", "requirements-lock.txt"],
     cwd=article_dir,
     check=True,
+)
+freeze = subprocess.run(
+    ["python", "-m", "pip", "freeze"],
+    cwd=article_dir,
+    check=True,
+    capture_output=True,
+    text=True,
+).stdout
+(Path(os.environ["RUN_ROOT"]) / "pip-freeze.txt").write_text(
+    freeze,
+    encoding="utf-8",
 )
 subprocess.run(["python", "-m", "pytest"], cwd=article_dir, check=True)
 
@@ -191,6 +203,6 @@ archive = shutil.make_archive(
 print("Envie este arquivo para consolidação:", archive)
 ```
 
-O ZIP contém somente os nove JSONs. `resumo.csv` e a figura serão regenerados no
-repositório a partir deles, garantindo que os artefatos versionados sejam
-reproduzíveis.
+O ZIP contém somente os nove JSONs. Preserve também `environment.json`,
+`pip-freeze.txt` e `training.log` no diretório da execução. `resumo.csv` e a
+figura serão regenerados no repositório a partir dos JSONs.

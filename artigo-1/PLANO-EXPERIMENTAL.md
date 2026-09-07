@@ -120,9 +120,11 @@ médio. As matrizes das três seeds serão somadas e normalizadas por classe
 verdadeira, mostrando quais tipos celulares ainda são confundidos sem repetir a
 comparação global já apresentada pela tabela.
 
-Cada execução produzirá um JSON identificado por modelo e seed.
-Os nove JSONs alimentarão automaticamente `resumo.csv`, a tabela e as figuras;
-nenhum resultado será digitado manualmente no artigo.
+Cada execução produziu um JSON identificado por modelo e seed.
+Os nove JSONs alimentam automaticamente `resumo.csv` e a figura principal.
+Na Issue #10, a tabela LaTeX deverá ser gerada ou importada a partir de
+`resumo.csv`; se houver transcrição, todos os valores deverão ser conferidos
+mecanicamente contra os JSONs, sem usar números lembrados ou recalculados à mão.
 
 ## Uso da máquina local
 
@@ -201,20 +203,26 @@ Não devem entrar no Git:
 - arquivos temporários do Colab;
 - artefatos auxiliares da compilação LaTeX.
 
-## O que ainda será definido na implementação
+## Decisões consolidadas na implementação
 
-As decisões abaixo pertencem às issues de pipeline e modelos e não alteram a
-pergunta de pesquisa:
+As Issues #1 a #7 concluíram a fase experimental com estas decisões:
 
-- camadas e canais da CNN compacta;
-- aumentos de dados apropriados para células sanguíneas;
-- tamanho do lote, épocas máximas e paciência da parada antecipada;
-- otimizador e taxas de aprendizado de cada modelo;
+- CNN compacta com três blocos de 32, 64 e 128 canais, duas convoluções `3 × 3`
+  por bloco, normalização em lote, ReLU, max pooling, pooling médio global e
+  dropout de 0,30;
+- aumento geométrico somente no treino, com rotações de até 15 graus e reflexões
+  horizontal e vertical com probabilidade de 0,5;
+- lotes de 64 imagens, no máximo 30 épocas, `min_delta=1e-4` e parada antecipada
+  após cinco épocas sem melhora no F1 macro de validação;
+- AdamW com `weight_decay=1e-4`, taxa `1e-3` para regressão logística e CNN e,
+  na ResNet18, `1e-4` no backbone e `1e-3` na cabeça;
+- matriz de confusão de teste da ResNet18 agregada entre as três seeds e
+  normalizada por classe verdadeira como figura principal.
 
-Até os três resultados básicos existirem, não serão adicionados outros datasets,
-arquiteturas ou estudos de ablação.
-Essa contenção de escopo protege o prazo e mantém o artigo centrado na pergunta de
-pesquisa escolhida.
+As nove execuções canônicas foram realizadas no mesmo runtime Google Colab, com
+GPU Tesla T4, e produziram todos os JSONs, `resumo.csv` e a figura versionados.
+Não serão adicionados outros datasets, arquiteturas ou estudos de ablação durante
+a escrita. Essa contenção mantém o artigo centrado na pergunta de pesquisa.
 
 ## Limite de interpretação
 
