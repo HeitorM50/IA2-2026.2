@@ -24,6 +24,7 @@
 \usepackage{url}
 
 \graphicspath{{figs/}}
+\input{results-generated.tex}
 
 \begin{document}
 
@@ -60,7 +61,7 @@ matricula@aluno.unb.br}
 Contexto do problema em uma frase.
 Lacuna ou dificuldade que motiva o trabalho.
 Este trabalho avalia \textit{[o quê]} sobre o conjunto de dados \textit{[qual]}, seguindo \textit{[protocolo]}.
-O melhor modelo alcançou \textit{[métrica]} de \textit{[valor]}, contra \textit{[valor]} da linha de base.
+O melhor modelo, \ResultBestModel{}, alcançou F1 macro de $\ResultBestFOne$ no teste, contra $\ResultLogregFOne$ da regressão logística.
 A análise indica \textit{[interpretação]}, com as limitações discutidas na Seção~\ref{sec:discussao}.
 \end{abstract}
 
@@ -78,9 +79,17 @@ aprendizado profundo, [termo 2], [termo 3], [termo 4], [termo 5]
 % Parágrafo 3: frase explícita de contribuição -- "Este trabalho contribui com...".
 % Parágrafo 4: mapa das seções.
 
-Texto da introdução.
+A identificação dos tipos celulares em imagens microscópicas é uma tarefa básica da análise morfológica do sangue periférico e exige a distinção de células visualmente semelhantes por profissionais experientes \cite{acevedo2019recognition,acevedo2020dataset}.
+O BloodMNIST reúne imagens de basófilos, eosinófilos, eritroblastos, granulócitos imaturos, linfócitos, monócitos, neutrófilos e plaquetas, totalizando oito classes com frequências distintas \cite{acevedo2020dataset,yang2023medmnist}.
+Sua padronização em baixa resolução e em partições fixas permite comparar algoritmos de classificação sob condições controladas \cite{yang2023medmnist}.
+Como o conjunto representa células normais isoladas e a resolução reduzida pode omitir detalhes relevantes, seu emprego neste estudo constitui um benchmark experimental, e não um sistema de apoio ao diagnóstico clínico \cite{acevedo2020dataset,yang2023medmnist}.
 
-As contribuições deste trabalho são: (i) \textit{[contribuição 1]}; (ii) \textit{[contribuição 2]}.
+Redes neurais convolucionais (CNNs) e transferência de aprendizado já foram aplicadas às imagens que originaram o BloodMNIST, com ênfase em arquiteturas pré-treinadas e na acurácia global \cite{acevedo2019recognition,gavas2021deep}.
+O estudo de referência do MedMNIST também avalia redes residuais e métodos automatizados, porém não isola, em um único protocolo com múltiplas sementes, o ganho progressivo de uma CNN compacta e de uma rede pré-treinada sobre um classificador linear em F1 macro \cite{yang2023medmnist}.
+Permanece, portanto, a necessidade de uma comparação controlada das três famílias que considere o desbalanceamento entre os tipos celulares e também seus custos computacionais \cite{acevedo2020dataset,yang2023medmnist}.
+Diante dessa lacuna, formula-se a pergunta de pesquisa: em classificação multiclasse de tipos celulares no BloodMNIST, em que medida uma CNN compacta treinada do zero e uma ResNet18 pré-treinada no ImageNet-1K superam uma regressão logística em F1 macro, sob o mesmo protocolo experimental?
+
+Este trabalho contribui com: (i) uma comparação controlada entre regressão logística multinomial, CNN compacta treinada do zero e ResNet18 pré-treinada no ImageNet-1K; (ii) uma análise conjunta de F1 macro, acurácia balanceada, tempo de treino e número de parâmetros em três sementes aleatórias.
 
 O restante do artigo está organizado da seguinte forma.
 A Seção~\ref{sec:trabalhos} discute os trabalhos relacionados.
@@ -96,9 +105,18 @@ A Seção~\ref{sec:discussao} discute os achados e as limitações, e a Seção~
 % Agrupe por abordagem, não faça uma lista de resumos individuais.
 % Feche a seção dizendo o que este trabalho faz de diferente.
 
-Texto agrupando os trabalhos por abordagem \cite{goodfellow2016deep}.
+Classificadores lineares, como a regressão logística multinomial, estimam fronteiras de decisão diretamente sobre atributos fixos e oferecem uma referência simples para quantificar o valor acrescentado por representações não lineares \cite{bohning1992multinomial,goodfellow2016deep}.
+Quando recebem pixels vetorizados, entretanto, esses classificadores não incorporam explicitamente a localidade nem o compartilhamento de parâmetros característicos das imagens \cite{goodfellow2016deep,lecun2015deep}.
 
-Diferentemente dos trabalhos citados, este artigo \textit{[o diferencial]}.
+As CNNs exploram esses dois vieses por meio de filtros convolucionais e constroem representações espaciais hierárquicas durante o treinamento \cite{lecun2015deep}.
+Uma CNN compacta inicializada aleatoriamente constitui, assim, um nível intermediário de comparação: aprende atributos específicos do BloodMNIST sem recorrer a dados externos, mas dispõe de menor capacidade que arquiteturas profundas \cite{goodfellow2016deep,lecun2015deep}.
+
+Na transferência de aprendizado, filtros aprendidos em uma tarefa de origem podem ser reutilizados, embora sua generalidade tenda a diminuir nas camadas superiores \cite{yosinski2014transferable}.
+As redes residuais facilitam a otimização de arquiteturas profundas mediante conexões de atalho, propriedade que fundamenta o uso da ResNet18 como modelo transferido \cite{he2016deep}.
+No conjunto de células sanguíneas que deu origem ao BloodMNIST, foram avaliadas redes VGG-16 e InceptionV3 como extratoras de atributos e em ajuste fino, enquanto outro estudo comparou 27 CNNs pré-treinadas no ImageNet \cite{acevedo2019recognition,gavas2021deep}.
+O benchmark MedMNIST padronizou partições e incluiu ResNet18 e ResNet50 entre suas referências, favorecendo comparações reprodutíveis entre métodos \cite{yang2023medmnist}.
+
+Diferentemente desses estudos, este artigo compara um classificador linear, uma CNN compacta treinada do zero e uma ResNet18 com ajuste fino integral nas mesmas partições oficiais e com imagens de resolução $64\times64$, usando três sementes e F1 macro como critério principal.
 
 %------------------------------------------------------------------------------
 \section{Metodologia}
@@ -108,24 +126,42 @@ Diferentemente dos trabalhos citados, este artigo \textit{[o diferencial]}.
 % Regra: outra pessoa tem que conseguir reproduzir o experimento lendo só isto.
 
 \subsection{Conjunto de Dados}
-Origem do conjunto de dados, com citação formal \cite{yang2024medmnistdata}.
-Número de amostras, número de classes ou faixa da variável alvo, e distribuição entre classes.
-Licença e forma de acesso.
+Foi utilizado o BloodMNIST na resolução $64\times64$, subconjunto do MedMNIST+ derivado de imagens microscópicas de células individuais do sangue periférico e distribuído como um conjunto público para classificação multiclasse \cite{acevedo2020dataset,yang2024medmnistdata}.
+O artefato contém 17\,092 imagens em três canais de cor vermelho, verde e azul (RGB), rotuladas em oito classes: 1\,218 basófilos, 3\,117 eosinófilos, 1\,551 eritroblastos, 2\,895 granulócitos imaturos, 1\,214 linfócitos, 1\,420 monócitos, 3\,329 neutrófilos e 2\,348 plaquetas.
+As frequências variam de 7,10\% para linfócitos a 19,48\% para neutrófilos, o que caracteriza desbalanceamento moderado entre as classes.
+Os dados foram obtidos pela interface de programação de aplicações (API) do MedMNIST, versão 3.0.2, com o identificador \texttt{bloodmnist}, resolução 64 e download automático a partir do registro oficial no Zenodo indicado em \cite{yang2024medmnistdata}, sob a licença Creative Commons Attribution 4.0 (CC BY 4.0).
 
 \subsection{Pré-processamento}
-Redimensionamento, normalização, aumento de dados, tratamento de valores faltantes.
+Foram usadas as imagens previamente recortadas ao centro e redimensionadas para $64\times64$ pelo MedMNIST+.
+Após a conversão dos valores inteiros para tensores no intervalo $[0,1]$, cada canal foi normalizado pelas médias $(0{,}7961, 0{,}6596, 0{,}6963)$ e pelos desvios padrão $(0{,}2233, 0{,}2546, 0{,}0947)$, calculados exclusivamente sobre o conjunto de treino para evitar vazamento de informação.
+Durante o treino, aplicaram-se independentemente espelhamentos horizontal e vertical, ambos com probabilidade 0,5, e rotação aleatória de até $15^\circ$ em cada direção.
+Na validação e no teste não houve aumento de dados, mas foi mantida a normalização estimada no treino.
+Não foi necessária imputação, pois o artefato utilizado não contém imagens ou rótulos ausentes.
 
 \subsection{Protocolo Experimental}
-Divisão em treino, validação e teste, com as proporções e o critério de estratificação.
-A semente aleatória foi fixada em \textit{[valor]} para permitir reprodução.
-Todos os modelos foram avaliados sob o mesmo protocolo.
+Foram preservados os splits oficiais e fixos do BloodMNIST, com 11\,959 imagens para treino, 1\,712 para validação e 3\,421 para teste, correspondentes aproximadamente à razão 70:10:20.
+As proporções das oito classes são praticamente idênticas nos três splits, e nenhuma redivisão ou amostragem estratificada adicional foi realizada.
+Cada modelo foi treinado com as sementes 42, 1337 e 2026, totalizando nove execuções independentes; as sementes alteraram a inicialização, a ordem dos lotes e as transformações aleatórias, mas não a composição dos splits, e o modo determinístico do backend cuDNN foi ativado.
+Todos os modelos foram avaliados sob o mesmo protocolo, com as mesmas imagens, pré-processamento, tamanho de lote, limite de épocas e regra de seleção; as variações específicas de modelo restringiram-se à arquitetura, à inicialização e às taxas de aprendizado declaradas a seguir.
+O desenvolvimento e os testes curtos ocorreram localmente, enquanto as nove execuções finais foram realizadas no mesmo ambiente do Google Colab, e o conjunto de teste foi consultado somente após a seleção da melhor época pela validação.
 
 \subsection{Modelos e Hiperparâmetros}
-Arquitetura de cada modelo, função de perda, otimizador, taxa de aprendizado, tamanho do lote, número de épocas e critério de parada.
-Implementação em PyTorch~\textit{[versão]}.
+Foram comparadas três famílias de classificadores com complexidade crescente.
+A regressão logística multinomial lineariza os $3\times64\times64$ valores da imagem e os conecta diretamente às oito saídas, totalizando 98\,312 parâmetros treináveis.
+A rede neural convolucional (CNN) compacta foi treinada do zero e contém três blocos com 32, 64 e 128 canais; cada bloco aplica duas convoluções $3\times3$ com preenchimento unitário, normalização em lote e unidade linear retificada (ReLU), seguidas por subamostragem pelo máximo (max-pooling) $2\times2$.
+Após os blocos, foram usados pooling médio adaptativo, dropout de 0,3 e uma camada linear de 128 para oito unidades, em um total de 288\,488 parâmetros treináveis.
+A ResNet18 \cite{he2016deep} foi inicializada com os pesos ImageNet-1K \cite{deng2009imagenet} identificados por \texttt{IMAGENET1K\_V1}, teve sua camada final substituída por uma projeção de 512 para oito classes e foi integralmente ajustada, com 11\,180\,616 parâmetros treináveis.
+Os três modelos foram otimizados com AdamW, decaimento de pesos de $10^{-4}$ e entropia cruzada multiclasse sem ponderação por classe ou reamostragem.
+A taxa de aprendizado foi de $10^{-3}$ para a regressão logística e a CNN; na ResNet18, adotaram-se $10^{-4}$ no corpo da rede e $10^{-3}$ na camada final.
+O tamanho de lote foi 64 e o limite foi de 30 épocas, com parada antecipada após cinco épocas consecutivas sem melhora superior a $10^{-4}$ no F1 macro de validação; o estado de maior F1 macro foi restaurado antes do teste.
+A implementação utilizou Python 3.13.15, PyTorch 2.11.0+cu128 e torchvision 0.26.0+cu128, e as execuções canônicas foram feitas em uma unidade de processamento gráfico (GPU) NVIDIA Tesla T4 a partir do commit \texttt{7ac7cc5}.
 
 \subsection{Métricas}
-Métricas escolhidas e a justificativa da escolha diante do problema.
+A métrica principal foi o F1 macro, calculado pela média não ponderada do F1 das oito classes, porque a variação de frequência entre tipos celulares faria a acurácia favorecer as classes mais numerosas \cite{sokolova2009systematic}.
+A acurácia foi mantida como medida da proporção global de acertos, e a acurácia balanceada, definida pela média da sensibilidade (recall) por classe, foi usada para verificar o desempenho sem ponderação pela prevalência.
+A matriz de confusão permitiu localizar os pares de classes responsáveis pelos erros.
+O tempo de treino e os números de parâmetros totais e treináveis foram registrados para relacionar o ganho preditivo ao custo computacional de cada arquitetura.
+Para cada modelo, as métricas de teste foram resumidas pela média e pelo desvio padrão amostral das três sementes.
 % Justificar a métrica é um critério de correção explícito do professor.
 % Acurácia em base desbalanceada é o erro mais comum: use F1, AUC-ROC ou
 % acurácia balanceada e diga por quê.
@@ -137,32 +173,34 @@ Métricas escolhidas e a justificativa da escolha diante do problema.
 % Alvo: ~0,8 página. Uma tabela principal e uma figura que responda a uma pergunta.
 % Não escreva prosa descrevendo a tabela: comente apenas o que ela não mostra.
 
-\begin{table}[htbp]
-\caption{Desempenho dos modelos avaliados no conjunto de teste.}
+\begin{table*}[t]
+\caption{Desempenho no conjunto de teste, contagem de parâmetros e tempo de treinamento no mesmo ambiente Google Colab com GPU \ResultDevice{}; métricas e tempo são apresentados como média $\pm$ desvio padrão de \ResultRuns{} sementes, permitindo comparar qualidade preditiva, estabilidade e custo computacional.}
 \label{tab:resultados}
 \centering
-\resizebox{\columnwidth}{!}{%
-\begin{tabular}{lccccc}
+\begin{tabular}{lcccccc}
 \toprule
-\textbf{Modelo} & \textbf{F1 (macro)} & \textbf{Acc. bal.} & \textbf{Tempo (s)} & \textbf{Parâm. totais} & \textbf{Parâm. treináveis} \\
+Modelo & F1 macro & Acurácia balanceada & Acurácia & \multicolumn{2}{c}{Parâmetros} & Tempo (s) \\
+\cmidrule(lr){5-6}
+& & & & Totais & Treináveis & \\
 \midrule
-Regressão logística & 0,000 & 0,000 & 0 & 0 & 0 \\
-CNN compacta        & 0,000 & 0,000 & 0 & 0 & 0 \\
-ResNet18             & 0,000 & 0,000 & 0 & 0 & 0 \\
+Regressão logística & $\ResultLogregFOne$ & $\ResultLogregBalancedAccuracy$ & $\ResultLogregAccuracy$ & $\ResultLogregParametersTotal$ & $\ResultLogregParametersTrainable$ & $\ResultLogregTime$ \\
+CNN compacta & $\ResultCnnFOne$ & $\ResultCnnBalancedAccuracy$ & $\ResultCnnAccuracy$ & $\ResultCnnParametersTotal$ & $\ResultCnnParametersTrainable$ & $\ResultCnnTime$ \\
+ResNet18 & $\mathbf{\ResultResnetFOne}$ & $\ResultResnetBalancedAccuracy$ & $\ResultResnetAccuracy$ & $\ResultResnetParametersTotal$ & $\ResultResnetParametersTrainable$ & $\ResultResnetTime$ \\
 \bottomrule
 \end{tabular}
-}
-\end{table}
+\end{table*}
 
-A Tabela~\ref{tab:resultados} apresenta os resultados.
+Sob o protocolo comum, a Tabela~\ref{tab:resultados} mostra que os dois modelos convolucionais superaram a regressão logística em F1 macro e que a ResNet18 alcançou a maior média.
+A tabela não identifica quais pares de tipos celulares concentram os erros nem se o desempenho agregado oculta dificuldades recorrentes em classes específicas.
 
-% Descomente quando houver figura em figs/.
-% \begin{figure}[htbp]
-% \centering
-% \includegraphics[width=\columnwidth]{nome-do-arquivo.png}
-% \caption{Legenda que explica o que a figura mostra e por que ela importa.}
-% \label{fig:exemplo}
-% \end{figure}
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\columnwidth]{confusao-melhor-modelo.pdf}
+\caption{Matriz de confusão da \ResultBestModel{}, agregada nas \ResultRuns{} sementes e normalizada por classe verdadeira; essa normalização torna visíveis os tipos celulares que concentram erros e que as médias globais não distinguem.}
+\label{fig:confusao-melhor-modelo}
+\end{figure}
+
+A Figura~\ref{fig:confusao-melhor-modelo} complementa a tabela ao localizar as confusões do melhor modelo entre granulócitos imaturos e neutrófilos.
 
 %------------------------------------------------------------------------------
 \section{Discussão e Limitações}

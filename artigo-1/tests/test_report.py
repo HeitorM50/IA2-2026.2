@@ -109,9 +109,10 @@ def test_generate_report_writes_deterministic_summary_and_pdf(tmp_path: Path) ->
     results_dir = tmp_path / "results"
     summary_path = tmp_path / "resumo.csv"
     figure_path = tmp_path / "confusao.pdf"
+    tex_path = tmp_path / "results-generated.tex"
     _write_grid(results_dir)
 
-    best_model = generate_report(results_dir, summary_path, figure_path)
+    best_model = generate_report(results_dir, summary_path, figure_path, tex_path)
 
     assert best_model == "resnet18"
     with summary_path.open(encoding="utf-8", newline="") as stream:
@@ -122,6 +123,12 @@ def test_generate_report_writes_deterministic_summary_and_pdf(tmp_path: Path) ->
     assert float(rows[2]["test_f1_macro_std"]) == pytest.approx(0.01)
     assert rows[2]["device_name"] == "NVIDIA T4"
     assert figure_path.read_bytes().startswith(b"%PDF")
+    latex = tex_path.read_text(encoding="utf-8")
+    assert r"\newcommand{\ResultRuns}{3}" in latex
+    assert r"\newcommand{\ResultDevice}{NVIDIA T4}" in latex
+    assert r"\newcommand{\ResultResnetFOne}{0{,}910 \pm 0{,}010}" in latex
+    assert r"\newcommand{\ResultBestModel}{ResNet18}" in latex
+    assert r"\newcommand{\ResultBestFOne}{\ResultResnetFOne}" in latex
 
 
 def test_report_rejects_incomplete_grid(tmp_path: Path) -> None:
