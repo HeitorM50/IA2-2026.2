@@ -105,7 +105,7 @@ A Seção~\ref{sec:discussao} discute os achados e as limitações, e a Seção~
 % Agrupe por abordagem, não faça uma lista de resumos individuais.
 % Feche a seção dizendo o que este trabalho faz de diferente.
 
-Classificadores lineares, como a regressão logística multinomial, estimam fronteiras de decisão diretamente sobre atributos fixos e oferecem uma referência simples para quantificar o valor acrescentado por representações não lineares \cite{goodfellow2016deep}.
+Classificadores lineares, como a regressão logística multinomial, estimam fronteiras de decisão diretamente sobre atributos fixos e oferecem uma referência simples para quantificar o valor acrescentado por representações não lineares \cite{bohning1992multinomial,goodfellow2016deep}.
 Quando recebem pixels vetorizados, entretanto, esses classificadores não incorporam explicitamente a localidade nem o compartilhamento de parâmetros característicos das imagens \cite{goodfellow2016deep,lecun2015deep}.
 
 As CNNs exploram esses dois vieses por meio de filtros convolucionais e constroem representações espaciais hierárquicas durante o treinamento \cite{lecun2015deep}.
@@ -150,14 +150,14 @@ Foram comparadas três famílias de classificadores com complexidade crescente.
 A regressão logística multinomial lineariza os $3\times64\times64$ valores da imagem e os conecta diretamente às oito saídas, totalizando 98\,312 parâmetros treináveis.
 A rede neural convolucional (CNN) compacta foi treinada do zero e contém três blocos com 32, 64 e 128 canais; cada bloco aplica duas convoluções $3\times3$ com preenchimento unitário, normalização em lote e unidade linear retificada (ReLU), seguidas por subamostragem pelo máximo (max-pooling) $2\times2$.
 Após os blocos, foram usados pooling médio adaptativo, dropout de 0,3 e uma camada linear de 128 para oito unidades, em um total de 288\,488 parâmetros treináveis.
-A ResNet18 \cite{he2016deep} foi inicializada com os pesos ImageNet-1K identificados por \texttt{IMAGENET1K\_V1}, teve sua camada final substituída por uma projeção de 512 para oito classes e foi integralmente ajustada, com 11\,180\,616 parâmetros treináveis.
+A ResNet18 \cite{he2016deep} foi inicializada com os pesos ImageNet-1K \cite{deng2009imagenet} identificados por \texttt{IMAGENET1K\_V1}, teve sua camada final substituída por uma projeção de 512 para oito classes e foi integralmente ajustada, com 11\,180\,616 parâmetros treináveis.
 Os três modelos foram otimizados com AdamW, decaimento de pesos de $10^{-4}$ e entropia cruzada multiclasse sem ponderação por classe ou reamostragem.
 A taxa de aprendizado foi de $10^{-3}$ para a regressão logística e a CNN; na ResNet18, adotaram-se $10^{-4}$ no corpo da rede e $10^{-3}$ na camada final.
 O tamanho de lote foi 64 e o limite foi de 30 épocas, com parada antecipada após cinco épocas consecutivas sem melhora superior a $10^{-4}$ no F1 macro de validação; o estado de maior F1 macro foi restaurado antes do teste.
 A implementação utilizou Python 3.13.15, PyTorch 2.11.0+cu128 e torchvision 0.26.0+cu128, e as execuções canônicas foram feitas em uma unidade de processamento gráfico (GPU) NVIDIA Tesla T4 a partir do commit \texttt{7ac7cc5}.
 
 \subsection{Métricas}
-A métrica principal foi o F1 macro, calculado pela média não ponderada do F1 das oito classes, porque a variação de frequência entre tipos celulares faria a acurácia favorecer as classes mais numerosas.
+A métrica principal foi o F1 macro, calculado pela média não ponderada do F1 das oito classes, porque a variação de frequência entre tipos celulares faria a acurácia favorecer as classes mais numerosas \cite{sokolova2009systematic}.
 A acurácia foi mantida como medida da proporção global de acertos, e a acurácia balanceada, definida pela média da sensibilidade (recall) por classe, foi usada para verificar o desempenho sem ponderação pela prevalência.
 A matriz de confusão permitiu localizar os pares de classes responsáveis pelos erros.
 O tempo de treino e os números de parâmetros totais e treináveis foram registrados para relacionar o ganho preditivo ao custo computacional de cada arquitetura.
