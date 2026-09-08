@@ -28,45 +28,35 @@
 
 \begin{document}
 
-%------------------------------------------------------------------------------
-% TÍTULO E AUTORES
-% Título específico: diga o método e o problema, não "Um estudo sobre IA".
-%------------------------------------------------------------------------------
-\title{Título do Artigo: Método Aplicado a Problema Específico}
+% Dados institucionais ainda precisam ser confirmados pelos autores antes da entrega.
+\title{Comparação entre Regressão Logística, CNN e ResNet18 na Classificação de Células do BloodMNIST}
 
 \author{
 \IEEEauthorblockN{Heitor Macedo}
 \IEEEauthorblockA{\textit{Departamento de Engenharia de Software} \\
 \textit{Universidade de Brasília --- FCTE} \\
-Brasília, Brasil \\
-matricula@aluno.unb.br}
+Brasília, Brasil}
 \and
-\IEEEauthorblockN{Nome do Colega}
+\IEEEauthorblockN{Gustavo Xavier Evangelista}
 \IEEEauthorblockA{\textit{Departamento de Engenharia de Software} \\
 \textit{Universidade de Brasília --- FCTE} \\
-Brasília, Brasil \\
-matricula@aluno.unb.br}
+Brasília, Brasil}
 }
 
 \maketitle
 
-%------------------------------------------------------------------------------
-% RESUMO - 150 a 200 palavras.
-% Estrutura: contexto (1 frase), lacuna (1), o que foi feito (2),
-% o número principal do resultado (1), o que isso significa (1).
-% O resumo precisa conter o resultado numérico. Não escreva "os resultados
-% são promissores" sem dizer qual foi o resultado.
-%------------------------------------------------------------------------------
 \begin{abstract}
-Contexto do problema em uma frase.
-Lacuna ou dificuldade que motiva o trabalho.
-Este trabalho avalia \textit{[o quê]} sobre o conjunto de dados \textit{[qual]}, seguindo \textit{[protocolo]}.
-O melhor modelo, \ResultBestModel{}, alcançou F1 macro de $\ResultBestFOne$ no teste, contra $\ResultLogregFOne$ da regressão logística.
-A análise indica \textit{[interpretação]}, com as limitações discutidas na Seção~\ref{sec:discussao}.
+Classificar tipos celulares em imagens microscópicas auxilia a análise morfológica do sangue periférico, mas diferenças de frequência e semelhanças visuais entre classes dificultam comparações justas entre algoritmos.
+Ainda há pouca evidência sobre o ganho progressivo de representações convolucionais e de transferência de aprendizado sobre uma linha de base linear sob um protocolo único.
+Este trabalho compara regressão logística multinomial, uma rede neural convolucional compacta treinada do zero e uma ResNet18 pré-treinada no ImageNet-1K no BloodMNIST com resolução $64\times64$.
+Os modelos foram avaliados nos splits oficiais, com o mesmo pré-processamento, três sementes e F1 macro como métrica principal; acurácia, acurácia balanceada, parâmetros e tempo de treinamento complementaram a análise.
+A ResNet18 obteve F1 macro de $\ResultBestFOne$ no teste, ante $\ResultCnnFOne$ da CNN e $\ResultLogregFOne$ da regressão logística.
+As duas arquiteturas convolucionais superaram amplamente a linha de base, enquanto a vantagem da ResNet18 sobre a CNN foi pequena e acompanhada de custo muito maior em parâmetros.
+Os resultados sustentam o uso de representações espaciais neste benchmark, mas não validam diagnóstico clínico nem generalização para outros laboratórios.
 \end{abstract}
 
 \begin{IEEEkeywords}
-aprendizado profundo, [termo 2], [termo 3], [termo 4], [termo 5]
+BloodMNIST, classificação de células sanguíneas, redes neurais convolucionais, transferência de aprendizado, comparação de algoritmos
 \end{IEEEkeywords}
 
 %------------------------------------------------------------------------------
@@ -156,23 +146,6 @@ A taxa de aprendizado foi de $10^{-3}$ para a regressão logística e a CNN; na 
 O tamanho de lote foi 64 e o limite foi de 30 épocas, com parada antecipada após cinco épocas consecutivas sem melhora superior a $10^{-4}$ no F1 macro de validação; o estado de maior F1 macro foi restaurado antes do teste.
 A implementação utilizou Python 3.13.15, PyTorch 2.11.0+cu128 e torchvision 0.26.0+cu128, e as execuções canônicas foram feitas em uma unidade de processamento gráfico (GPU) NVIDIA Tesla T4 a partir do commit \texttt{7ac7cc5}.
 
-\subsection{Métricas}
-A métrica principal foi o F1 macro, calculado pela média não ponderada do F1 das oito classes, porque a variação de frequência entre tipos celulares faria a acurácia favorecer as classes mais numerosas \cite{sokolova2009systematic}.
-A acurácia foi mantida como medida da proporção global de acertos, e a acurácia balanceada, definida pela média da sensibilidade (recall) por classe, foi usada para verificar o desempenho sem ponderação pela prevalência.
-A matriz de confusão permitiu localizar os pares de classes responsáveis pelos erros.
-O tempo de treino e os números de parâmetros totais e treináveis foram registrados para relacionar o ganho preditivo ao custo computacional de cada arquitetura.
-Para cada modelo, as métricas de teste foram resumidas pela média e pelo desvio padrão amostral das três sementes.
-% Justificar a métrica é um critério de correção explícito do professor.
-% Acurácia em base desbalanceada é o erro mais comum: use F1, AUC-ROC ou
-% acurácia balanceada e diga por quê.
-
-%------------------------------------------------------------------------------
-\section{Resultados}
-\label{sec:resultados}
-%------------------------------------------------------------------------------
-% Alvo: ~0,8 página. Uma tabela principal e uma figura que responda a uma pergunta.
-% Não escreva prosa descrevendo a tabela: comente apenas o que ela não mostra.
-
 \begin{table*}[t]
 \caption{Desempenho no conjunto de teste, contagem de parâmetros e tempo de treinamento no mesmo ambiente Google Colab com GPU \ResultDevice{}; métricas e tempo são apresentados como média $\pm$ desvio padrão de \ResultRuns{} sementes, permitindo comparar qualidade preditiva, estabilidade e custo computacional.}
 \label{tab:resultados}
@@ -190,6 +163,23 @@ ResNet18 & $\mathbf{\ResultResnetFOne}$ & $\ResultResnetBalancedAccuracy$ & $\Re
 \end{tabular}
 \end{table*}
 
+\subsection{Métricas}
+A métrica principal foi o F1 macro, calculado pela média não ponderada do F1 das oito classes, porque a variação de frequência entre tipos celulares faria a acurácia favorecer as classes mais numerosas \cite{sokolova2009systematic}.
+A acurácia foi mantida como medida da proporção global de acertos, e a acurácia balanceada, definida pela média da sensibilidade (recall) por classe, foi usada para verificar o desempenho sem ponderação pela prevalência.
+A matriz de confusão permitiu localizar os pares de classes responsáveis pelos erros.
+O tempo de treino e os números de parâmetros totais e treináveis foram registrados para relacionar o ganho preditivo ao custo computacional de cada arquitetura.
+Para cada modelo, as métricas de teste foram resumidas pela média e pelo desvio padrão amostral das três sementes.
+% Justificar a métrica é um critério de correção explícito do professor.
+% Acurácia em base desbalanceada é o erro mais comum: use F1, AUC-ROC ou
+% acurácia balanceada e diga por quê.
+
+%------------------------------------------------------------------------------
+\section{Resultados}
+\label{sec:resultados}
+%------------------------------------------------------------------------------
+% Alvo: ~0,8 página. Uma tabela principal e uma figura que responda a uma pergunta.
+% Não escreva prosa descrevendo a tabela: comente apenas o que ela não mostra.
+
 Sob o protocolo comum, a Tabela~\ref{tab:resultados} mostra que os dois modelos convolucionais superaram a regressão logística em F1 macro e que a ResNet18 alcançou a maior média.
 A tabela não identifica quais pares de tipos celulares concentram os erros nem se o desempenho agregado oculta dificuldades recorrentes em classes específicas.
 
@@ -205,29 +195,35 @@ A Figura~\ref{fig:confusao-melhor-modelo} complementa a tabela ao localizar as c
 %------------------------------------------------------------------------------
 \section{Discussão e Limitações}
 \label{sec:discussao}
-%------------------------------------------------------------------------------
-% Alvo: ~0,5 página. É aqui que a nota se separa.
-% Responda: por que o melhor modelo venceu? Onde ele erra? O que o experimento
-% NÃO prova? O plano de ensino cobra a discussão das limitações nominalmente.
+Os ganhos de 0,230 e 0,236 em F1 macro da CNN e da ResNet18 sobre a regressão logística, respectivamente, indicam que explorar a estrutura espacial das imagens foi mais importante que aplicar um classificador diretamente aos pixels vetorizados.
+A maior média da ResNet18 é compatível com sua maior capacidade e com a reutilização de filtros visuais aprendidos no ImageNet-1K, seguida pelo ajuste de toda a rede ao domínio alvo \cite{yosinski2014transferable,he2016deep}; essa associação, entretanto, não estabelece isoladamente uma relação causal.
 
-Interpretação dos resultados.
+Na matriz agregada da ResNet18, as confusões mais frequentes ocorreram entre granulócitos imaturos e neutrófilos: 39 de 1\,737 granulócitos imaturos foram classificados como neutrófilos (2,2\%), enquanto 59 de 1\,998 neutrófilos receberam o rótulo de granulócito imaturo (3,0\%).
+Também houve 24 de 852 monócitos classificados como granulócitos imaturos (2,8\%).
+Esses erros são coerentes com uma tarefa que depende de diferenças morfológicas finas entre células visualmente relacionadas, justamente o tipo de informação que pode ser reduzido na resolução adotada \cite{acevedo2020dataset}.
+A diferença de 0,006 entre a ResNet18 ($0{,}982\pm0{,}003$) e a CNN ($0{,}976\pm0{,}007$) foi menor que o desvio padrão da CNN e da mesma ordem da variação entre sementes; com apenas três execuções e sem teste de hipótese, não se pode afirmar superioridade estatística da ResNet18.
 
-Este trabalho tem as seguintes limitações.
-Primeiro, \textit{[limitação de dados, escopo ou generalização]}.
-Segundo, \textit{[limitação de protocolo -- execução única, ausência de teste estatístico, busca limitada de hiperparâmetros]}.
-Terceiro, \textit{[limitação de validade externa]}.
+Quanto ao custo, a CNN obteve grande ganho sobre a regressão logística com 288\,488 parâmetros e tempo médio de 301,9 s, ante 98\,312 parâmetros e 247,2 s da linha de base.
+A ResNet18 elevou o F1 macro em apenas 0,006 sobre a CNN, mas utilizou 11\,180\,616 parâmetros, aproximadamente 38,8 vezes mais; seus 254,7 s médios não permitem concluir que tenha sido mais rápida, pois os desvios dos tempos foram elevados e houve parada antecipada em épocas diferentes.
+Assim, a CNN oferece o compromisso mais econômico, enquanto a ResNet18 fornece a maior média quando memória e tamanho do modelo não são restrições.
+
+Há três limitações principais.
+Primeiro, as imagens reduzidas a $64\times64$, as frequências diferentes entre as oito classes e a origem microscópica restrita do BloodMNIST limitam a informação visual e a diversidade dos dados.
+Segundo, foram usadas somente três sementes, sem teste estatístico e com busca limitada de hiperparâmetros para os três modelos.
+Terceiro, este benchmark de células normais isoladas não valida diagnóstico clínico nem demonstra generalização para outros laboratórios, equipamentos, populações ou resoluções.
 
 %------------------------------------------------------------------------------
 \section{Conclusão}
 \label{sec:conclusao}
-%------------------------------------------------------------------------------
-% Alvo: ~0,2 página, 3 a 4 frases. Nenhum resultado novo aqui.
-
-Conclusão do trabalho e uma direção de trabalho futuro.
+Sob o mesmo protocolo experimental, a CNN compacta e a ResNet18 superaram a regressão logística em 0,230 e 0,236 de F1 macro, respectivamente, confirmando o benefício das representações convolucionais para o BloodMNIST.
+A ResNet18 apresentou a maior média, de $\ResultBestFOne$, mas seu ganho de 0,006 sobre a CNN foi pequeno diante da variação entre sementes e exigiu aproximadamente 38,8 vezes mais parâmetros.
+Conclui-se que a CNN compacta oferece o melhor compromisso entre desempenho e complexidade neste benchmark, enquanto a ResNet18 prioriza a maior média preditiva.
+Trabalhos futuros devem ampliar o número de sementes, aplicar testes estatísticos, explorar hiperparâmetros de forma sistemática e avaliar imagens externas obtidas em outros laboratórios e resoluções.
 
 %------------------------------------------------------------------------------
 % REFERÊNCIAS - 10 a 15 itens, incluindo obrigatoriamente o conjunto de dados.
 %------------------------------------------------------------------------------
+\IEEEtriggeratref{7}
 \bibliographystyle{IEEEtran}
 \bibliography{refs}
 
