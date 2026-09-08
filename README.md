@@ -17,6 +17,18 @@ make
 
 O PDF sai em `artigo-1/paper/main.pdf`.
 
+No Windows com MiKTeX, `latexmk` depende de Perl. Se ele não estiver disponível,
+compile pelo fluxo equivalente, que não exige Perl:
+
+```powershell
+cd artigo-1\paper
+powershell -ExecutionPolicy Bypass -File .\build.ps1
+```
+
+Para instalar exatamente as versões usadas na validação local mais recente do
+código, use `python -m pip install -r artigo-1/requirements-lock.txt`. O ambiente
+da execução canônica no Colab está documentado em `artigo-1/NOTAS.md`.
+
 No VS Code, abra a pasta raiz e instale as extensões recomendadas — a compilação
 passa a acontecer a cada salvamento, com preview lado a lado.
 

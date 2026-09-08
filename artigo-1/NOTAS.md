@@ -148,6 +148,17 @@ Metodologia depois.
   menor variação entre seeds, superando a CNN em cerca de 0,58 ponto percentual;
   a pequena diferença entre os modelos profundos deverá ser ponderada pelo custo
   e pela complexidade na Discussão.
+- **06/09/2026 — reprodutibilidade do ambiente:** `requirements-lock.txt` fixa as
+  dependências diretas do ambiente local em que a suíte completa foi validada.
+  Para os resultados canônicos, os artefatos comprovam Python 3.13.15, PyTorch
+  2.11.0+cu128, TorchVision 0.26.0+cu128, CUDA 12.8, MedMNIST 3.0.2 e GPU Tesla
+  T4. A execução original não preservou um `pip freeze` completo; portanto, as
+  versões exatas de NumPy, Pillow, scikit-learn e Matplotlib daquele runtime não
+  serão inferidas retrospectivamente. O roteiro do Colab passa a salvar esse
+  manifesto em futuras execuções.
+- **06/09/2026 — lembrete para a Issue #10:** `report.py` gera `resumo.csv` e a
+  figura, mas não uma tabela LaTeX. A tabela do artigo deverá ser gerada/importada
+  do CSV ou conferida mecanicamente contra os nove JSONs antes de fechar a issue.
 
 ## Checklist antes de entregar
 

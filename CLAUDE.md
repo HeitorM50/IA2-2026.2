@@ -130,6 +130,17 @@ make watch    # recompila a cada salvamento
 make clean    # remove os arquivos auxiliares
 ```
 
+No Windows, quando o MiKTeX não possuir Perl para executar `latexmk`, usar o
+script PowerShell versionado:
+
+```powershell
+cd artigo-1\paper
+powershell -ExecutionPolicy Bypass -File .\build.ps1
+```
+
+O script executa `pdflatex`, `bibtex` e mais duas passagens de `pdflatex`, e
+falha se restarem referências ou citações indefinidas.
+
 Dependências no Arch:
 
 ```sh
@@ -162,9 +173,19 @@ No VS Code, a extensão `james-yu.latex-workshop` compila com o mesmo `latexmk`
 - [x] Repositório e esqueleto LaTeX do Artigo 1 montados
 - [x] Definir rota temática do Artigo 1 (I ou II)
 - [x] Escolher e citar o dataset público
-- [ ] Implementar os experimentos em `artigo-1/src/`
+- [x] Implementar os experimentos em `artigo-1/src/`
+- [x] Executar a grade canônica de 3 modelos × 3 seeds e gerar os artefatos
 - [ ] Escrever o artigo
 - [ ] Revisar contra os 4 critérios de correção e o limite de 4 páginas
 - [ ] Subir no Teams (os **dois** integrantes, cada um na pasta da própria matrícula)
 
-Decisões em aberto estão registradas em `artigo-1/NOTAS.md`.
+As decisões experimentais consolidadas e o ambiente canônico estão registrados em
+`artigo-1/NOTAS.md` e `artigo-1/PLANO-EXPERIMENTAL.md`.
+
+### Lembrete obrigatório para a Issue #10
+
+`src/report.py` gera `src/results/resumo.csv` e a figura, mas ainda não gera a
+tabela LaTeX. Ao implementar a Issue #10, não digitar resultados a partir da
+memória: gerar/importar a tabela a partir de `resumo.csv` ou adicionar uma saída
+LaTeX ao relatório. Antes de fechar a issue, conferir mecanicamente que todos os
+valores do artigo coincidem com os nove JSONs canônicos.

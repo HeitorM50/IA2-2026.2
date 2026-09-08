@@ -1,0 +1,12 @@
+# Dependências diretas fixadas no ambiente local validado em 06/09/2026
+# com Python 3.12.10.
+# Este arquivo reproduz o ambiente de desenvolvimento e testes, não o runtime
+# canônico do Colab registrado nos JSONs de resultados e em NOTAS.md.
+numpy==2.5.2
+torch==2.13.0
+torchvision==0.28.0
+medmnist==3.0.2
+Pillow==12.3.0
+scikit-learn==1.9.0
+matplotlib==3.11.1
+pytest==9.1.1
