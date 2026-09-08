@@ -29,6 +29,12 @@ DEFAULT_FIGURE_PATH = (
     / "figs"
     / "confusao-melhor-modelo.pdf"
 )
+DEFAULT_HISTORY_FIGURE_PATH = (
+    Path(__file__).resolve().parents[1]
+    / "paper"
+    / "figs"
+    / "acuracia-validacao-epocas.pdf"
+)
 DEFAULT_TEX_PATH = (
     Path(__file__).resolve().parents[1] / "paper" / "results-generated.tex"
 )
@@ -191,6 +197,14 @@ def _validate_result(
     history = training.get("history")
     if not isinstance(history, list) or len(history) != epochs_ran:
         raise ResultValidationError(f"{path.name}: histórico de épocas incompleto.")
+    for epoch, entry in enumerate(history, start=1):
+        entry_path = f"{path.name}.training.history[{epoch - 1}]"
+        epoch_result = _require_mapping(entry, entry_path)
+        if epoch_result.get("epoch") != epoch:
+            raise ResultValidationError(
+                f"{entry_path}.epoch deve ser uma sequência iniciada em 1."
+            )
+        _require_metric(epoch_result, "validation_accuracy", entry_path)
 
     validation = _require_mapping(
         result.get("validation"), f"{path.name}.validation"
@@ -543,11 +557,84 @@ def _write_confusion_figure(matrix: np.ndarray, path: Path) -> None:
         temporary.unlink(missing_ok=True)
 
 
+def _write_accuracy_history_figure(
+    results: Sequence[dict[str, Any]], path: Path
+) -> None:
+    styles = {
+        42: ("#0072B2", "-"),
+        1337: ("#D55E00", "--"),
+        2026: ("#009E73", ":"),
+    }
+    figure, axes = plt.subplots(1, len(MODEL_ORDER), figsize=(7.15, 2.2))
+
+    for axis, model in zip(axes, MODEL_ORDER, strict=True):
+        model_results = sorted(
+            (result for result in results if result["model"] == model),
+            key=lambda result: int(result["seed"]),
+        )
+        model_accuracies: list[float] = []
+        max_epoch = 1
+        for result in model_results:
+            history = result["training"]["history"]
+            epochs = [int(entry["epoch"]) for entry in history]
+            accuracies = [float(entry["validation_accuracy"]) for entry in history]
+            seed = int(result["seed"])
+            color, linestyle = styles[seed]
+            axis.plot(
+                epochs,
+                accuracies,
+                color=color,
+                linestyle=linestyle,
+                linewidth=1.15,
+                marker="o",
+                markevery=[len(epochs) - 1],
+                markersize=3,
+                label=f"Semente {seed}",
+            )
+            model_accuracies.extend(accuracies)
+            max_epoch = max(max_epoch, epochs[-1])
+
+        lower = max(0.0, math.floor((min(model_accuracies) - 0.01) / 0.05) * 0.05)
+        upper = min(1.0, math.ceil((max(model_accuracies) + 0.01) / 0.05) * 0.05)
+        axis.set_ylim(lower, upper)
+        axis.set_xlim(0.5, max_epoch + 0.5)
+        axis.set_xticks([1, *range(5, max_epoch + 1, 5)])
+        axis.yaxis.set_major_formatter(PercentFormatter(1.0, decimals=0))
+        axis.set_title(MODEL_DISPLAY_NAMES[model], fontsize=9)
+        axis.set_xlabel("Época", fontsize=8)
+        axis.tick_params(axis="both", labelsize=7)
+        axis.grid(axis="y", color="#D9D9D9", linewidth=0.5)
+        axis.spines[["top", "right"]].set_visible(False)
+
+    axes[0].set_ylabel("Acurácia de validação", fontsize=8)
+    handles, labels = axes[0].get_legend_handles_labels()
+    figure.legend(
+        handles,
+        labels,
+        loc="upper center",
+        bbox_to_anchor=(0.5, 0.995),
+        ncol=len(labels),
+        frameon=False,
+        fontsize=8,
+    )
+    figure.subplots_adjust(left=0.07, right=0.995, bottom=0.2, top=0.76, wspace=0.3)
+
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = path.with_name(f"{path.stem}.tmp{path.suffix}")
+    try:
+        figure.savefig(temporary, format=path.suffix.lstrip("."), bbox_inches="tight")
+        os.replace(temporary, path)
+    finally:
+        plt.close(figure)
+        temporary.unlink(missing_ok=True)
+
+
 def generate_report(
     results_dir: Path,
     summary_path: Path,
     figure_path: Path,
     tex_path: Path | None = None,
+    history_figure_path: Path | None = None,
 ) -> str:
     """Valida resultados e grava os artefatos reproduzíveis do artigo."""
 
@@ -559,6 +646,8 @@ def generate_report(
         _atomic_write_latex_macros(rows, best_model, tex_path)
     matrix = _aggregated_normalized_confusion(results, best_model)
     _write_confusion_figure(matrix, figure_path)
+    if history_figure_path is not None:
+        _write_accuracy_history_figure(results, history_figure_path)
     return best_model
 
 
@@ -567,6 +656,9 @@ def _parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--results-dir", type=Path, default=DEFAULT_RESULTS_DIR)
     parser.add_argument("--summary", type=Path, default=DEFAULT_SUMMARY_PATH)
     parser.add_argument("--figure", type=Path, default=DEFAULT_FIGURE_PATH)
+    parser.add_argument(
+        "--history-figure", type=Path, default=DEFAULT_HISTORY_FIGURE_PATH
+    )
     parser.add_argument("--tex", type=Path, default=DEFAULT_TEX_PATH)
     return parser.parse_args(argv)
 
@@ -578,10 +670,12 @@ def main(argv: Sequence[str] | None = None) -> int:
         args.summary,
         args.figure,
         args.tex,
+        args.history_figure,
     )
     print(f"grade canônica validada; melhor modelo: {best_model}")
     print(f"resumo gravado: {args.summary}")
     print(f"figura gravada: {args.figure}")
+    print(f"curvas de acurácia gravadas: {args.history_figure}")
     print(f"macros LaTeX gravadas: {args.tex}")
     return 0
 

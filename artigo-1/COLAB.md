@@ -185,7 +185,8 @@ cd "$REPO_DIR/artigo-1"
 python -m src.report \
   --results-dir "$RUN_ROOT/results" \
   --summary "$RUN_ROOT/resumo.csv" \
-  --figure "$RUN_ROOT/confusao-melhor-modelo.pdf"
+  --figure "$RUN_ROOT/confusao-melhor-modelo.pdf" \
+  --history-figure "$RUN_ROOT/acuracia-validacao-epocas.pdf"
 ```
 
 ```python

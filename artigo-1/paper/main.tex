@@ -186,6 +186,13 @@ Para cada modelo, as métricas de teste foram resumidas pela média e pelo desvi
 Sob o protocolo comum, a Tabela~\ref{tab:resultados} mostra que os dois modelos convolucionais superaram a regressão logística em F1 macro e que a ResNet18 alcançou a maior média.
 A tabela não identifica quais pares de tipos celulares concentram os erros nem se o desempenho agregado oculta dificuldades recorrentes em classes específicas.
 
+\begin{figure*}[t]
+\centering
+\includegraphics[width=\textwidth]{acuracia-validacao-epocas.pdf}
+\caption{Acurácia de validação por época nas três sementes de cada modelo; cada curva termina quando a parada antecipada é acionada, e as escalas verticais específicas evidenciam a dinâmica intramodelo, portanto as amplitudes entre painéis não devem ser comparadas diretamente.}
+\label{fig:acuracia-validacao}
+\end{figure*}
+
 \begin{figure}[htbp]
 \centering
 \includegraphics[width=\columnwidth]{confusao-melhor-modelo.pdf}
@@ -193,6 +200,7 @@ A tabela não identifica quais pares de tipos celulares concentram os erros nem 
 \label{fig:confusao-melhor-modelo}
 \end{figure}
 
+A Figura~\ref{fig:acuracia-validacao} mostra que a ResNet18 atingiu cedo uma faixa estável de alta acurácia, enquanto a CNN convergiu com oscilações maiores e a regressão logística permaneceu mais instável e em patamar inferior.
 A Figura~\ref{fig:confusao-melhor-modelo} complementa a tabela ao localizar as confusões do melhor modelo entre granulócitos imaturos e neutrófilos.
 
 %------------------------------------------------------------------------------
@@ -226,6 +234,7 @@ Trabalhos futuros devem ampliar o número de sementes, aplicar testes estatísti
 %------------------------------------------------------------------------------
 % REFERÊNCIAS - 10 a 15 itens, incluindo obrigatoriamente o conjunto de dados.
 %------------------------------------------------------------------------------
+\newpage
 \IEEEtriggeratref{7}
 \bibliographystyle{IEEEtran}
 \bibliography{refs}
