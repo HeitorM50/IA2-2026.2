@@ -78,9 +78,17 @@ aprendizado profundo, [termo 2], [termo 3], [termo 4], [termo 5]
 % Parágrafo 3: frase explícita de contribuição -- "Este trabalho contribui com...".
 % Parágrafo 4: mapa das seções.
 
-Texto da introdução.
+A identificação dos tipos celulares em imagens microscópicas é uma tarefa básica da análise morfológica do sangue periférico e exige a distinção de células visualmente semelhantes por profissionais experientes \cite{acevedo2019recognition,acevedo2020dataset}.
+O BloodMNIST reúne imagens de basófilos, eosinófilos, eritroblastos, granulócitos imaturos, linfócitos, monócitos, neutrófilos e plaquetas, totalizando oito classes com frequências distintas \cite{acevedo2020dataset,yang2023medmnist}.
+Sua padronização em baixa resolução e em partições fixas permite comparar algoritmos de classificação sob condições controladas \cite{yang2023medmnist}.
+Como o conjunto representa células normais isoladas e a resolução reduzida pode omitir detalhes relevantes, seu emprego neste estudo constitui um benchmark experimental, e não um sistema de apoio ao diagnóstico clínico \cite{acevedo2020dataset,yang2023medmnist}.
 
-As contribuições deste trabalho são: (i) \textit{[contribuição 1]}; (ii) \textit{[contribuição 2]}.
+Redes neurais convolucionais (CNNs) e transferência de aprendizado já foram aplicadas às imagens que originaram o BloodMNIST, com ênfase em arquiteturas pré-treinadas e na acurácia global \cite{acevedo2019recognition,gavas2021deep}.
+O estudo de referência do MedMNIST também avalia redes residuais e métodos automatizados, porém não isola, em um único protocolo com múltiplas sementes, o ganho progressivo de uma CNN compacta e de uma rede pré-treinada sobre um classificador linear em F1 macro \cite{yang2023medmnist}.
+Permanece, portanto, a necessidade de uma comparação controlada das três famílias que considere o desbalanceamento entre os tipos celulares e também seus custos computacionais \cite{acevedo2020dataset,yang2023medmnist}.
+Diante dessa lacuna, formula-se a pergunta de pesquisa: em classificação multiclasse de tipos celulares no BloodMNIST, em que medida uma CNN compacta treinada do zero e uma ResNet18 pré-treinada no ImageNet-1K superam uma regressão logística em F1 macro, sob o mesmo protocolo experimental?
+
+Este trabalho contribui com: (i) uma comparação controlada entre regressão logística multinomial, CNN compacta treinada do zero e ResNet18 pré-treinada no ImageNet-1K; (ii) uma análise conjunta de F1 macro, acurácia balanceada, tempo de treino e número de parâmetros em três sementes aleatórias.
 
 O restante do artigo está organizado da seguinte forma.
 A Seção~\ref{sec:trabalhos} discute os trabalhos relacionados.
@@ -96,9 +104,18 @@ A Seção~\ref{sec:discussao} discute os achados e as limitações, e a Seção~
 % Agrupe por abordagem, não faça uma lista de resumos individuais.
 % Feche a seção dizendo o que este trabalho faz de diferente.
 
-Texto agrupando os trabalhos por abordagem \cite{goodfellow2016deep}.
+Classificadores lineares, como a regressão logística multinomial, estimam fronteiras de decisão diretamente sobre atributos fixos e oferecem uma referência simples para quantificar o valor acrescentado por representações não lineares \cite{goodfellow2016deep}.
+Quando recebem pixels vetorizados, entretanto, esses classificadores não incorporam explicitamente a localidade nem o compartilhamento de parâmetros característicos das imagens \cite{goodfellow2016deep,lecun2015deep}.
 
-Diferentemente dos trabalhos citados, este artigo \textit{[o diferencial]}.
+As CNNs exploram esses dois vieses por meio de filtros convolucionais e constroem representações espaciais hierárquicas durante o treinamento \cite{lecun2015deep}.
+Uma CNN compacta inicializada aleatoriamente constitui, assim, um nível intermediário de comparação: aprende atributos específicos do BloodMNIST sem recorrer a dados externos, mas dispõe de menor capacidade que arquiteturas profundas \cite{goodfellow2016deep,lecun2015deep}.
+
+Na transferência de aprendizado, filtros aprendidos em uma tarefa de origem podem ser reutilizados, embora sua generalidade tenda a diminuir nas camadas superiores \cite{yosinski2014transferable}.
+As redes residuais facilitam a otimização de arquiteturas profundas mediante conexões de atalho, propriedade que fundamenta o uso da ResNet18 como modelo transferido \cite{he2016deep}.
+No conjunto de células sanguíneas que deu origem ao BloodMNIST, foram avaliadas redes VGG-16 e InceptionV3 como extratoras de atributos e em ajuste fino, enquanto outro estudo comparou 27 CNNs pré-treinadas no ImageNet \cite{acevedo2019recognition,gavas2021deep}.
+O benchmark MedMNIST padronizou partições e incluiu ResNet18 e ResNet50 entre suas referências, favorecendo comparações reprodutíveis entre métodos \cite{yang2023medmnist}.
+
+Diferentemente desses estudos, este artigo compara um classificador linear, uma CNN compacta treinada do zero e uma ResNet18 com ajuste fino integral nas mesmas partições oficiais e com imagens de resolução $64\times64$, usando três sementes e F1 macro como critério principal.
 
 %------------------------------------------------------------------------------
 \section{Metodologia}
@@ -108,7 +125,7 @@ Diferentemente dos trabalhos citados, este artigo \textit{[o diferencial]}.
 % Regra: outra pessoa tem que conseguir reproduzir o experimento lendo só isto.
 
 \subsection{Conjunto de Dados}
-Foi utilizado o BloodMNIST na resolução $64\times64$, subconjunto do MedMNIST+ derivado de imagens microscópicas de células individuais do sangue periférico e distribuído como um conjunto público para classificação multiclasse \cite{yang2024medmnistdata}.
+Foi utilizado o BloodMNIST na resolução $64\times64$, subconjunto do MedMNIST+ derivado de imagens microscópicas de células individuais do sangue periférico e distribuído como um conjunto público para classificação multiclasse \cite{acevedo2020dataset,yang2024medmnistdata}.
 O artefato contém 17\,092 imagens em três canais de cor vermelho, verde e azul (RGB), rotuladas em oito classes: 1\,218 basófilos, 3\,117 eosinófilos, 1\,551 eritroblastos, 2\,895 granulócitos imaturos, 1\,214 linfócitos, 1\,420 monócitos, 3\,329 neutrófilos e 2\,348 plaquetas.
 As frequências variam de 7,10\% para linfócitos a 19,48\% para neutrófilos, o que caracteriza desbalanceamento moderado entre as classes.
 Os dados foram obtidos pela interface de programação de aplicações (API) do MedMNIST, versão 3.0.2, com o identificador \texttt{bloodmnist}, resolução 64 e download automático a partir do registro oficial no Zenodo indicado em \cite{yang2024medmnistdata}, sob a licença Creative Commons Attribution 4.0 (CC BY 4.0).
