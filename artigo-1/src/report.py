@@ -19,9 +19,9 @@ import numpy as np
 from matplotlib.ticker import PercentFormatter
 
 from .config import DATA_CONFIG, MODEL_SPECS, TRAINING_CONFIGS
-from .run import DEFAULT_RESULTS_DIR
 
 MODEL_ORDER = tuple(MODEL_SPECS)
+DEFAULT_RESULTS_DIR = Path(__file__).resolve().parent / "results"
 DEFAULT_SUMMARY_PATH = DEFAULT_RESULTS_DIR / "resumo.csv"
 DEFAULT_FIGURE_PATH = (
     Path(__file__).resolve().parents[1]
@@ -29,6 +29,21 @@ DEFAULT_FIGURE_PATH = (
     / "figs"
     / "confusao-melhor-modelo.pdf"
 )
+DEFAULT_TEX_PATH = (
+    Path(__file__).resolve().parents[1] / "paper" / "results-generated.tex"
+)
+
+MODEL_TEX_PREFIXES = {
+    "logreg": "Logreg",
+    "cnn": "Cnn",
+    "resnet18": "Resnet",
+}
+
+MODEL_DISPLAY_NAMES = {
+    "logreg": "Regressão logística",
+    "cnn": "CNN compacta",
+    "resnet18": "ResNet18",
+}
 
 SUMMARY_FIELDS = (
     "model",
@@ -339,6 +354,125 @@ def _atomic_write_csv(rows: Sequence[dict[str, Any]], path: Path) -> None:
         temporary.unlink(missing_ok=True)
 
 
+def _latex_decimal(value: float, decimal_places: int) -> str:
+    return f"{value:.{decimal_places}f}".replace(".", "{,}")
+
+
+def _latex_mean_std(mean: float, standard_deviation: float, decimal_places: int) -> str:
+    return (
+        f"{_latex_decimal(mean, decimal_places)} "
+        f"\\pm {_latex_decimal(standard_deviation, decimal_places)}"
+    )
+
+
+def _latex_integer(value: int) -> str:
+    return f"{value:,}".replace(",", "\\,")
+
+
+def _latex_text(value: str) -> str:
+    replacements = {
+        "&": "\\&",
+        "%": "\\%",
+        "$": "\\$",
+        "#": "\\#",
+        "_": "\\_",
+        "{": "\\{",
+        "}": "\\}",
+    }
+    return "".join(replacements.get(character, character) for character in value)
+
+
+def _latex_command(name: str, value: str) -> str:
+    return f"\\newcommand{{\\{name}}}{{{value}}}"
+
+
+def _atomic_write_latex_macros(
+    rows: Sequence[dict[str, Any]],
+    best_model: str,
+    path: Path,
+) -> None:
+    runs = {int(row["runs"]) for row in rows}
+    devices = {str(row["device_name"]) for row in rows}
+    if len(runs) != 1 or len(devices) != 1:
+        raise ResultValidationError(
+            "As macros LaTeX exigem o mesmo número de execuções e a mesma GPU."
+        )
+
+    lines = [
+        "% Gerado automaticamente por python -m src.report.",
+        "% Fonte: os nove arquivos JSON canônicos em src/results/.",
+        "% Não editar manualmente.",
+        _latex_command("ResultRuns", str(runs.pop())),
+        _latex_command("ResultDevice", _latex_text(devices.pop())),
+    ]
+    for row in rows:
+        model = str(row["model"])
+        prefix = MODEL_TEX_PREFIXES[model]
+        lines.extend(
+            [
+                _latex_command(
+                    f"Result{prefix}FOne",
+                    _latex_mean_std(
+                        float(row["test_f1_macro_mean"]),
+                        float(row["test_f1_macro_std"]),
+                        3,
+                    ),
+                ),
+                _latex_command(
+                    f"Result{prefix}BalancedAccuracy",
+                    _latex_mean_std(
+                        float(row["test_balanced_accuracy_mean"]),
+                        float(row["test_balanced_accuracy_std"]),
+                        3,
+                    ),
+                ),
+                _latex_command(
+                    f"Result{prefix}Accuracy",
+                    _latex_mean_std(
+                        float(row["test_accuracy_mean"]),
+                        float(row["test_accuracy_std"]),
+                        3,
+                    ),
+                ),
+                _latex_command(
+                    f"Result{prefix}ParametersTotal",
+                    _latex_integer(int(row["parameters_total"])),
+                ),
+                _latex_command(
+                    f"Result{prefix}ParametersTrainable",
+                    _latex_integer(int(row["parameters_trainable"])),
+                ),
+                _latex_command(
+                    f"Result{prefix}Time",
+                    _latex_mean_std(
+                        float(row["training_elapsed_seconds_mean"]),
+                        float(row["training_elapsed_seconds_std"]),
+                        1,
+                    ),
+                ),
+            ]
+        )
+
+    best_prefix = MODEL_TEX_PREFIXES[best_model]
+    lines.extend(
+        [
+            _latex_command(
+                "ResultBestModel",
+                _latex_text(MODEL_DISPLAY_NAMES[best_model]),
+            ),
+            _latex_command("ResultBestFOne", f"\\Result{best_prefix}FOne"),
+        ]
+    )
+
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = path.with_suffix(path.suffix + ".tmp")
+    try:
+        temporary.write_text("\n".join(lines) + "\n", encoding="utf-8")
+        os.replace(temporary, path)
+    finally:
+        temporary.unlink(missing_ok=True)
+
+
 def _best_model(rows: Sequence[dict[str, Any]]) -> str:
     ordered = sorted(
         rows,
@@ -413,13 +547,16 @@ def generate_report(
     results_dir: Path,
     summary_path: Path,
     figure_path: Path,
+    tex_path: Path | None = None,
 ) -> str:
-    """Valida resultados e grava a tabela e a figura reproduzíveis."""
+    """Valida resultados e grava os artefatos reproduzíveis do artigo."""
 
     results = load_canonical_results(results_dir)
     rows = summarize_results(results)
     best_model = _best_model(rows)
     _atomic_write_csv(rows, summary_path)
+    if tex_path is not None:
+        _atomic_write_latex_macros(rows, best_model, tex_path)
     matrix = _aggregated_normalized_confusion(results, best_model)
     _write_confusion_figure(matrix, figure_path)
     return best_model
@@ -430,15 +567,22 @@ def _parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--results-dir", type=Path, default=DEFAULT_RESULTS_DIR)
     parser.add_argument("--summary", type=Path, default=DEFAULT_SUMMARY_PATH)
     parser.add_argument("--figure", type=Path, default=DEFAULT_FIGURE_PATH)
+    parser.add_argument("--tex", type=Path, default=DEFAULT_TEX_PATH)
     return parser.parse_args(argv)
 
 
 def main(argv: Sequence[str] | None = None) -> int:
     args = _parse_args(argv)
-    best_model = generate_report(args.results_dir, args.summary, args.figure)
+    best_model = generate_report(
+        args.results_dir,
+        args.summary,
+        args.figure,
+        args.tex,
+    )
     print(f"grade canônica validada; melhor modelo: {best_model}")
     print(f"resumo gravado: {args.summary}")
     print(f"figura gravada: {args.figure}")
+    print(f"macros LaTeX gravadas: {args.tex}")
     return 0
 
 

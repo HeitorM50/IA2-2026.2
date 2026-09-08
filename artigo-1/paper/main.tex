@@ -24,6 +24,7 @@
 \usepackage{url}
 
 \graphicspath{{figs/}}
+\input{results-generated.tex}
 
 \begin{document}
 
@@ -60,7 +61,7 @@ matricula@aluno.unb.br}
 Contexto do problema em uma frase.
 Lacuna ou dificuldade que motiva o trabalho.
 Este trabalho avalia \textit{[o quê]} sobre o conjunto de dados \textit{[qual]}, seguindo \textit{[protocolo]}.
-O melhor modelo alcançou \textit{[métrica]} de \textit{[valor]}, contra \textit{[valor]} da linha de base.
+O melhor modelo, \ResultBestModel{}, alcançou F1 macro de $\ResultBestFOne$ no teste, contra $\ResultLogregFOne$ da regressão logística.
 A análise indica \textit{[interpretação]}, com as limitações discutidas na Seção~\ref{sec:discussao}.
 \end{abstract}
 
@@ -172,32 +173,34 @@ Para cada modelo, as métricas de teste foram resumidas pela média e pelo desvi
 % Alvo: ~0,8 página. Uma tabela principal e uma figura que responda a uma pergunta.
 % Não escreva prosa descrevendo a tabela: comente apenas o que ela não mostra.
 
-\begin{table}[htbp]
-\caption{Desempenho dos modelos avaliados no conjunto de teste.}
+\begin{table*}[t]
+\caption{Desempenho no conjunto de teste, contagem de parâmetros e tempo de treinamento no mesmo ambiente Google Colab com GPU \ResultDevice{}; métricas e tempo são apresentados como média $\pm$ desvio padrão de \ResultRuns{} sementes, permitindo comparar qualidade preditiva, estabilidade e custo computacional.}
 \label{tab:resultados}
 \centering
-\resizebox{\columnwidth}{!}{%
-\begin{tabular}{lccccc}
+\begin{tabular}{lcccccc}
 \toprule
-\textbf{Modelo} & \textbf{F1 (macro)} & \textbf{Acc. bal.} & \textbf{Tempo (s)} & \textbf{Parâm. totais} & \textbf{Parâm. treináveis} \\
+Modelo & F1 macro & Acurácia balanceada & Acurácia & \multicolumn{2}{c}{Parâmetros} & Tempo (s) \\
+\cmidrule(lr){5-6}
+& & & & Totais & Treináveis & \\
 \midrule
-Regressão logística & 0,000 & 0,000 & 0 & 0 & 0 \\
-CNN compacta        & 0,000 & 0,000 & 0 & 0 & 0 \\
-ResNet18             & 0,000 & 0,000 & 0 & 0 & 0 \\
+Regressão logística & $\ResultLogregFOne$ & $\ResultLogregBalancedAccuracy$ & $\ResultLogregAccuracy$ & $\ResultLogregParametersTotal$ & $\ResultLogregParametersTrainable$ & $\ResultLogregTime$ \\
+CNN compacta & $\ResultCnnFOne$ & $\ResultCnnBalancedAccuracy$ & $\ResultCnnAccuracy$ & $\ResultCnnParametersTotal$ & $\ResultCnnParametersTrainable$ & $\ResultCnnTime$ \\
+ResNet18 & $\mathbf{\ResultResnetFOne}$ & $\ResultResnetBalancedAccuracy$ & $\ResultResnetAccuracy$ & $\ResultResnetParametersTotal$ & $\ResultResnetParametersTrainable$ & $\ResultResnetTime$ \\
 \bottomrule
 \end{tabular}
-}
-\end{table}
+\end{table*}
 
-A Tabela~\ref{tab:resultados} apresenta os resultados.
+Sob o protocolo comum, a Tabela~\ref{tab:resultados} mostra que os dois modelos convolucionais superaram a regressão logística em F1 macro e que a ResNet18 alcançou a maior média.
+A tabela não identifica quais pares de tipos celulares concentram os erros nem se o desempenho agregado oculta dificuldades recorrentes em classes específicas.
 
-% Descomente quando houver figura em figs/.
-% \begin{figure}[htbp]
-% \centering
-% \includegraphics[width=\columnwidth]{nome-do-arquivo.png}
-% \caption{Legenda que explica o que a figura mostra e por que ela importa.}
-% \label{fig:exemplo}
-% \end{figure}
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\columnwidth]{confusao-melhor-modelo.pdf}
+\caption{Matriz de confusão da \ResultBestModel{}, agregada nas \ResultRuns{} sementes e normalizada por classe verdadeira; essa normalização torna visíveis os tipos celulares que concentram erros e que as médias globais não distinguem.}
+\label{fig:confusao-melhor-modelo}
+\end{figure}
+
+A Figura~\ref{fig:confusao-melhor-modelo} complementa a tabela ao localizar as confusões do melhor modelo entre granulócitos imaturos e neutrófilos.
 
 %------------------------------------------------------------------------------
 \section{Discussão e Limitações}
