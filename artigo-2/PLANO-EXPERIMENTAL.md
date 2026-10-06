@@ -145,6 +145,31 @@ As falhas não são inventadas: são os modos de falha que a documentação do
 A falha de ganho é o argumento central: nenhuma validação de faixa a pega, e é
 exatamente o caso em que um detector aprendido tem vantagem real sobre uma regra.
 
+### Quanto cada falha escapa da checagem de faixa — medido em 06/10
+
+`faults.violates_range` implementa o `if` que um firmware faria: para cada canal,
+uma faixa de plausibilidade física (RPM entre 0 e 8.000, velocidade entre 0 e 300
+km/h, e assim por diante). Essas faixas **não** são os extremos observados nos
+dados; são os limites que uma validação real checaria.
+
+Medindo sobre 400 janelas do split de teste por classe:
+
+| Falha | Canal | Passa pela checagem |
+| ----- | ----- | ------------------: |
+| **Ganho** | `rpm` | **100,0 %** |
+| **Travado** | `velocidade` | **100,0 %** |
+| **Lacuna** | `fluxo_ar` | **100,0 %** |
+| Deriva | `temp_adm` | 67,5 % |
+| Pico | `pressao_adm` | 3,8 % |
+
+E nenhuma das 3.191 janelas normais do teste viola a faixa — a regra não produz
+falso positivo, ela simplesmente é cega para três das cinco classes.
+
+Esses números sustentam o artigo inteiro e devem aparecer na Metodologia ou nos
+Resultados: três das cinco falhas são **completamente invisíveis** para uma regra
+de faixa, e o pico, que é o caso em que a regra funciona, é justamente onde o
+limiar estatístico deve vencer o autoencoder.
+
 ## Modelos comparados
 
 Todos treinados **apenas em janelas normais**, avaliados sob o mesmo protocolo.

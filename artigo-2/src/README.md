@@ -8,7 +8,7 @@ Antes de escrever qualquer coisa aqui, acionar a skill `experimento-pytorch`.
 | `verifica_dataset.py` | baixa, confere o MD5 oficial e reproduz os números da verificação registrada no `PLANO-EXPERIMENTAL.md` | **pronto** |
 | `config.py` | fonte **única** de seeds, janela, passo, hiperparâmetros e caminhos. Nenhuma constante duplicada em outro arquivo | **pronto** (#27) |
 | `data.py` | download do dataset, reamostragem para 1 Hz, segmentação nas lacunas, janelamento e split por sessão. Saída em NumPy, sem depender de PyTorch | **pronto** (#27) |
-| `faults.py` | as cinco injeções de falha: ganho, travado, deriva, pico, lacuna. Cada função recebe janela normal e devolve janela estragada + máscara do que foi estragado | a criar |
+| `faults.py` | as cinco injeções de falha em unidades físicas, mais `violates_range` (o `if` do firmware) e `build_evaluation_set` | **pronto** (#28) |
 | `models/baseline.py` | limiar 3σ por canal | a criar |
 | `models/pca.py` | PCA como autoencoder linear, erro de reconstrução | a criar |
 | `models/autoencoder.py` | autoencoder LSTM sequência-a-sequência | a criar |

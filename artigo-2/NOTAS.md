@@ -129,6 +129,24 @@ Anotar aqui, com data, cada decisão fechada. Isso vira material da Metodologia.
   testes rodam com `python -m pytest` de dentro de `artigo-2/`; é o `-m` que põe o
   diretório no `sys.path` e torna `from src import ...` importável.
 
+- **06/10/2026 — injeção de falhas (#28):** as cinco classes implementadas em
+  `src/faults.py`, operando em **unidades físicas**. Para isso `load_dataset`
+  ganhou a opção `normalize=False`; o contrato publicado na #27 fica intacto,
+  porque o padrão continua devolvendo os splits normalizados.
+- **06/10/2026 — o argumento central está medido, não afirmado:** ganho, sensor
+  travado e lacuna passam pela checagem de faixa em **100 %** das janelas; a
+  deriva passa em 67,5 % e o pico em apenas 3,8 %. Nenhuma das 3.191 janelas
+  normais do teste viola a faixa. Três das cinco falhas são invisíveis para uma
+  regra, e o pico é justamente onde o limiar estatístico deve vencer.
+- **06/10/2026 — lacuna e sensor travado são parentes por construção.** Depois da
+  reamostragem, perda de pacote vira valor repetido, que é o mesmo efeito de um
+  sensor congelado; o que as separa é a duração. Lacunas acima de `gap_s`
+  encerram o segmento no `data.py` e nunca aparecem dentro de uma janela. Essa
+  dependência precisa ser dita na Discussão, não escondida.
+- **06/10/2026 — 20 % de janelas corrompidas** no conjunto de avaliação, com as
+  cinco classes em rodízio. A fração é baixa de propósito: é o desbalanceamento
+  que justifica o AUC-PR, e inflá-lo deixaria o problema artificialmente fácil.
+
 ## O que NÃO pode cair, por mais que aperte
 
 1. A linha de base 3σ — sem ela o resultado do autoencoder não significa nada.

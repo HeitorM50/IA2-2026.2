@@ -298,11 +298,22 @@ def apply_normalizer(
 # --------------------------------------------------------------------------
 
 
-def load_dataset(cfg: DataConfig = DATA_CONFIG, *, use_cache: bool = True) -> Dataset:
-    """Monta os três splits normalizados.
+def load_dataset(
+    cfg: DataConfig = DATA_CONFIG,
+    *,
+    use_cache: bool = True,
+    normalize: bool = True,
+) -> Dataset:
+    """Monta os três splits.
 
     A ordem importa e é a regra mais importante do pipeline: **dividir primeiro,
     normalizar depois**, com as estatísticas vindas apenas do treino.
+
+    Com `normalize=False` os splits saem em unidades físicas (RPM, km/h, kPa),
+    e `mean`/`std` continuam sendo devolvidos, ajustados no treino. É a forma
+    usada pela injeção de falhas: uma troca de constante de escala no firmware
+    multiplica o RPM real, e esse efeito só faz sentido antes da normalização.
+    O consumidor normaliza depois com `apply_normalizer`.
     """
 
     janelas, sessoes = _windows_cached(cfg) if use_cache else build_windows(cfg)
@@ -314,13 +325,14 @@ def load_dataset(cfg: DataConfig = DATA_CONFIG, *, use_cache: bool = True) -> Da
 
     media, desvio = fit_normalizer(janelas[mascaras["train"]])
 
-    partes = {
-        chave: Split(
-            X=apply_normalizer(janelas[mascara], media, desvio),
+    def monta(mascara: np.ndarray) -> Split:
+        bruto = janelas[mascara]
+        return Split(
+            X=apply_normalizer(bruto, media, desvio) if normalize else bruto,
             session=sessoes[mascara],
         )
-        for chave, mascara in mascaras.items()
-    }
+
+    partes = {chave: monta(mascara) for chave, mascara in mascaras.items()}
 
     return Dataset(
         train=partes["train"],

@@ -153,6 +153,120 @@ class DataConfig:
 DATA_CONFIG = DataConfig()
 
 
+@dataclass(frozen=True)
+class FaultConfig:
+    """Parâmetros das cinco injeções de falha.
+
+    Nenhuma falha é inventada: cada classe corresponde a um modo de falha que a
+    documentação do `baja-telemetry-api` descreve como real. A procedência de
+    cada uma vira texto da Metodologia.
+    """
+
+    # --- ganho / escala errada (docs/05) --------------------------------
+    # O firmware troca RPM_ESCALA de 0,25 para 0,125 e o backend passa a gravar
+    # o dobro do valor real. É a falha central do artigo: permanece dentro da
+    # faixa válida e nenhuma checagem a detecta.
+    gain_factor: float = 2.0
+
+    # --- sensor travado -------------------------------------------------
+    # A leitura congela no último valor e assim permanece até o fim da janela.
+
+    # --- deriva ---------------------------------------------------------
+    # Viés que cresce linearmente, típico de deriva térmica. O valor final é
+    # dado em múltiplos do desvio padrão do canal, para a severidade não
+    # depender da unidade.
+    drift_final_std: float = 3.0
+
+    # --- pico / outlier (ruído elétrico no barramento CAN) --------------
+    spike_magnitude_std: float = 6.0
+    spike_count: int = 3
+
+    # --- lacuna (docs/06) -----------------------------------------------
+    # Perda curta de pacotes, que a reamostragem com last-value-carried-forward
+    # transforma em valores repetidos. Lacunas acima de `DataConfig.gap_s`
+    # encerram o segmento e por construção nunca aparecem dentro de uma janela;
+    # por isso a classe injetada cobre apenas a perda curta.
+    gap_min_s: int = 3
+    gap_max_s: int = 8
+
+    # A falha começa em algum ponto da primeira metade da janela, para sempre
+    # sobrar trecho afetado suficiente para a latência de detecção fazer sentido.
+    onset_max_fraction: float = 0.5
+
+    # Fração de janelas corrompidas no conjunto de avaliação. Mantida baixa de
+    # propósito: é o desbalanceamento que justifica o AUC-PR como métrica
+    # principal, e inflá-lo deixaria o problema artificialmente fácil.
+    anomaly_fraction: float = 0.20
+
+    # Canal padrão de cada classe, escolhido pela plausibilidade física do modo
+    # de falha. O ganho vai no RPM porque é literalmente o caso do RPM_ESCALA;
+    # a deriva vai na temperatura porque deriva térmica é o caso documentado.
+    default_channel: tuple[tuple[str, str], ...] = (
+        ("gain", "rpm"),
+        ("stuck", "velocidade"),
+        ("drift", "temp_adm"),
+        ("spike", "pressao_adm"),
+        ("gap", "fluxo_ar"),
+    )
+
+    # Faixa que um `if` de firmware consideraria válida para cada canal. NÃO são
+    # os extremos observados nos dados: são limites de plausibilidade física,
+    # que é o que uma validação de faixa real checaria.
+    physical_range: tuple[tuple[str, float, float], ...] = (
+        ("rpm", 0.0, 8000.0),
+        ("velocidade", 0.0, 300.0),
+        ("fluxo_ar", 0.0, 400.0),
+        ("pressao_adm", 0.0, 300.0),
+        ("temp_adm", -40.0, 200.0),
+        ("pedal_d", 0.0, 100.0),
+    )
+
+    def __post_init__(self) -> None:
+        if self.gain_factor == 1.0:
+            raise ValueError("Um ganho de 1,0 não altera nada.")
+        if self.spike_count <= 0:
+            raise ValueError("O número de picos deve ser positivo.")
+        if self.gap_min_s <= 0 or self.gap_max_s < self.gap_min_s:
+            raise ValueError("A duração da lacuna está mal definida.")
+        if not 0 < self.onset_max_fraction < 1:
+            raise ValueError("O início da falha deve cair dentro da janela.")
+        if not 0 < self.anomaly_fraction < 1:
+            raise ValueError("A fração de anomalias deve ficar entre 0 e 1.")
+
+    def channel_for(self, fault: str) -> str:
+        """Canal padrão da classe de falha."""
+
+        return dict(self.default_channel)[fault]
+
+    def range_for(self, channel: str) -> tuple[float, float]:
+        """Faixa válida declarada para o canal."""
+
+        for nome, minimo, maximo in self.physical_range:
+            if nome == channel:
+                return minimo, maximo
+        raise KeyError(f"Canal sem faixa declarada: {channel}")
+
+    def as_dict(self) -> dict[str, Any]:
+        """Converte para um objeto serializável, para entrar no JSON de saída."""
+
+        return asdict(self)
+
+
+FAULT_CONFIG = FaultConfig()
+
+# Nomes das classes de falha, na ordem em que aparecem na tabela do artigo.
+FAULT_NAMES: tuple[str, ...] = ("gain", "stuck", "drift", "spike", "gap")
+
+# Rótulo em português de cada classe, para figuras e tabelas.
+FAULT_LABELS_PT: dict[str, str] = {
+    "gain": "ganho",
+    "stuck": "travado",
+    "drift": "deriva",
+    "spike": "pico",
+    "gap": "lacuna",
+}
+
+
 # Nome curto de cada coluna do CSV original, sem a unidade entre colchetes.
 # O dicionário cobre os dez canais do arquivo; `DataConfig.channels` escolhe
 # quais entram no experimento.
