@@ -112,6 +112,23 @@ Anotar aqui, com data, cada decisão fechada. Isso vira material da Metodologia.
   `Beschleunigung` ficam fora do treino. As três últimas são condição de direção,
   não falha. A `Messfehler` vira verificação qualitativa na Discussão.
 
+- **06/10/2026 — contrato do tensor (#27):** fechado em
+  `X float32 (n_janelas, 60, 6)` mais `session (n_janelas,)` com o nome da sessão
+  de origem, canais na ordem `rpm, velocidade, fluxo_ar, pressao_adm, temp_adm,
+  pedal_d`. É o que as issues de modelo consomem.
+- **06/10/2026 — o split é fixo entre as seeds.** `data.split_sessions` usa
+  `DataConfig.split_seed`, uma semente própria e constante, independente das seeds
+  de treinamento. Assim a variação entre as três execuções canônicas mede variação
+  de **treinamento**, e não troca das sessões avaliadas — mesmo princípio dos
+  splits oficiais fixos do Artigo 1.
+- **06/10/2026 — `data.py` não depende de PyTorch.** A saída é NumPy. Os modelos A
+  (limiar) e B (PCA) não precisam de torch, e manter o framework fora do pipeline
+  deixa o carregamento testável sem instalá-lo. O empacotamento em tensores fica
+  com quem precisa deles.
+- **06/10/2026 — ambiente:** `artigo-2/.venv`, espelhando `artigo-1/.venv`. Os
+  testes rodam com `python -m pytest` de dentro de `artigo-2/`; é o `-m` que põe o
+  diretório no `sys.path` e torna `from src import ...` importável.
+
 ## O que NÃO pode cair, por mais que aperte
 
 1. A linha de base 3σ — sem ela o resultado do autoencoder não significa nada.

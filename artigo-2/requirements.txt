@@ -1,10 +1,16 @@
 # Faixas de compatibilidade do pipeline do Artigo 2.
+# Validadas no ambiente artigo-2/.venv com Python 3.14.
 # Depois da execução canônica, congelar em requirements-lock.txt.
 numpy>=2.0,<3
-pandas>=2.2,<3
-torch>=2.5,<3
+pandas>=2.2,<4
 scikit-learn>=1.5,<2
 matplotlib>=3.9,<4
+
+# PyTorch é necessário somente para o autoencoder recorrente (#33).
+# O pipeline de dados e os modelos A e B rodam sem ele.
+# Instalar a variante de CPU:
+#   pip install torch --index-url https://download.pytorch.org/whl/cpu
+torch>=2.5,<3
 
 # Testes locais.
 pytest>=8,<10

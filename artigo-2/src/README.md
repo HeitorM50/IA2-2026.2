@@ -6,8 +6,8 @@ Antes de escrever qualquer coisa aqui, acionar a skill `experimento-pytorch`.
 | Arquivo | Responsabilidade | Status |
 | ------- | ---------------- | ------ |
 | `verifica_dataset.py` | baixa, confere o MD5 oficial e reproduz os números da verificação registrada no `PLANO-EXPERIMENTAL.md` | **pronto** |
-| `config.py` | fonte **única** de seeds, janela, passo, hiperparâmetros e caminhos. Nenhuma constante duplicada em outro arquivo | a criar |
-| `data.py` | download do dataset, *loader* para o formato canônico `(tempo, sinal, valor)`, reamostragem, janelamento por `frame_time`, split por sessão | a criar |
+| `config.py` | fonte **única** de seeds, janela, passo, hiperparâmetros e caminhos. Nenhuma constante duplicada em outro arquivo | **pronto** (#27) |
+| `data.py` | download do dataset, reamostragem para 1 Hz, segmentação nas lacunas, janelamento e split por sessão. Saída em NumPy, sem depender de PyTorch | **pronto** (#27) |
 | `faults.py` | as cinco injeções de falha: ganho, travado, deriva, pico, lacuna. Cada função recebe janela normal e devolve janela estragada + máscara do que foi estragado | a criar |
 | `models/baseline.py` | limiar 3σ por canal | a criar |
 | `models/pca.py` | PCA como autoencoder linear, erro de reconstrução | a criar |
@@ -16,6 +16,36 @@ Antes de escrever qualquer coisa aqui, acionar a skill `experimento-pytorch`.
 | `metrics.py` | AUC-PR, F1/precisão/revocação no limiar, latência de detecção, desagregação por classe de falha | adaptar de `artigo-1/src/metrics.py` |
 | `run.py` | orquestra modelo × seed e grava um JSON por execução em `results/` | adaptar de `artigo-1/src/run.py` |
 | `report.py` | consolida os JSON em `resumo.csv`, gera a tabela LaTeX e a figura | adaptar de `artigo-1/src/report.py` |
+
+## Ambiente
+
+Cada artigo tem o próprio venv, como no Artigo 1. Rodar de dentro de `artigo-2/`:
+
+```sh
+python -m venv .venv
+.venv/bin/python -m pip install -r requirements.txt
+.venv/bin/python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+```
+
+Os testes precisam ser invocados com `python -m pytest` a partir de `artigo-2/`,
+e não com o executável `pytest`: é o `-m` que coloca o diretório atual no
+`sys.path` e torna `from src import ...` importável.
+
+```sh
+.venv/bin/python -m pytest tests -m "not integration"   # rápido, sem dataset
+.venv/bin/python -m pytest tests                         # exige o dataset baixado
+```
+
+## Contrato do tensor (fechado na #27)
+
+```
+X        float32  (n_janelas, 60, 6)
+session           (n_janelas,)  nome da sessão de origem
+canais em ordem: rpm, velocidade, fluxo_ar, pressao_adm, temp_adm, pedal_d
+```
+
+`data.load_dataset()` devolve um `Dataset` com `train`, `val`, `test` (cada um um
+`Split` com `.X` e `.session`) mais `mean` e `std` ajustados **somente no treino**.
 
 ## Invariantes que precisam virar teste, não confiança
 
