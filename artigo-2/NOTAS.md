@@ -26,15 +26,16 @@ seções) e deve ser repetida. **Fechar a divisão é a primeira tarefa.**
       satisfeita com folga.
 - [x] **Janela de ementa** — até 09/10 o curso cobriu RNN/LSTM, autoencoders,
       VAE/GAN e Transformers. O autoencoder recorrente cai no centro.
-- [ ] **Conjunto de dados** — Automotive OBD-II (KIT), DOI `10.35097/1130`,
-      CC BY 4.0, 11,6 MB. **Pendente de verificação prática** (taxa de amostragem,
-      continuidade, quanto há de operação normal contínua).
+- [x] **Conjunto de dados** — Automotive OBD-II (KIT), DOI `10.35097/1130`,
+      CC BY 4.0, 11,6 MB. **Verificado em 06/10**: 81 sessões, 70 h, 10 canais.
+      Aprovado, com reamostragem obrigatória para 1 Hz (ver `PLANO-EXPERIMENTAL.md`).
 - [ ] **Modelos** — limiar 3σ, PCA e autoencoder LSTM.
 - [x] **Métrica principal** — AUC-PR, pelo desbalanceamento extremo entre janelas
       normais e anômalas. Secundárias: F1 no limiar calibrado, precisão, revocação
       e **latência de detecção**.
 - [x] **Seeds** — `42`, `1337`, `2026`, as mesmas do Artigo 1.
-- [ ] **Onde treinar** — provavelmente local; o modelo é pequeno. Confirmar.
+- [x] **Onde treinar** — local. O tensor completo tem 33,2 MB e o modelo é pequeno;
+      o Colab não é necessário.
 
 ## Pergunta de pesquisa
 
@@ -61,6 +62,24 @@ Anotar aqui, com data, cada decisão fechada. Isso vira material da Metodologia.
   segundo dataset (VED) e o teste de generalização cruzada entre datasets.
 - **06/10/2026** — esqueleto do `artigo-2/` criado espelhando o Artigo 1, com o
   LaTeX compilando limpo desde o primeiro commit.
+
+- **06/10/2026 — dataset verificado:** 81 sessões do mesmo veículo (Seat Leon,
+  2017–2018), 70,0 h, 10 canais presentes em todas as sessões. Baixado pelo
+  endpoint do RADAR/KIT que o DOI resolve.
+- **06/10/2026 — a taxa de 11 Hz é falsa:** cada linha repete o último valor
+  conhecido. Medida a taxa real de mudança por canal, o topo fica em 1,11 Hz
+  (`fluxo_ar`) e 1,07 Hz (`rpm`). **O pipeline reamostra para 1 Hz.** Treinar a
+  11 Hz faria o autoencoder aprender a copiar valor retido e inflaria o resultado.
+- **06/10/2026 — seleção de canais:** ficam `rpm`, `velocidade`, `fluxo_ar`,
+  `pressao_adm`, `temp_adm` e `pedal_d`. Saem `pedal_e` (correlação de 0,99 com
+  `pedal_d`, é o par redundante do pedal), `acelerador_abs`, `temp_arref` e
+  `temp_ambiente` (todos abaixo de 0,04 Hz de mudança real).
+- **06/10/2026 — segmentação:** sessões cortadas em lacunas maiores que 2 s;
+  11 sessões têm lacuna, a maior de 603,9 s. Resultam 85 segmentos contínuos e
+  **23.073 janelas** de 60 s com passo de 10 s. Tensor de 33,2 MB — roda em CPU.
+- **06/10/2026 — sessões especiais:** `Messfehler`, `Vollbremsung`, `Glatteis` e
+  `Beschleunigung` ficam fora do treino. As três últimas são condição de direção,
+  não falha. A `Messfehler` vira verificação qualitativa na Discussão.
 
 ## O que NÃO pode cair, por mais que aperte
 

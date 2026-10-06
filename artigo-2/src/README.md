@@ -5,6 +5,7 @@ Antes de escrever qualquer coisa aqui, acionar a skill `experimento-pytorch`.
 
 | Arquivo | Responsabilidade | Status |
 | ------- | ---------------- | ------ |
+| `verifica_dataset.py` | baixa, confere o MD5 oficial e reproduz os números da verificação registrada no `PLANO-EXPERIMENTAL.md` | **pronto** |
 | `config.py` | fonte **única** de seeds, janela, passo, hiperparâmetros e caminhos. Nenhuma constante duplicada em outro arquivo | a criar |
 | `data.py` | download do dataset, *loader* para o formato canônico `(tempo, sinal, valor)`, reamostragem, janelamento por `frame_time`, split por sessão | a criar |
 | `faults.py` | as cinco injeções de falha: ganho, travado, deriva, pico, lacuna. Cada função recebe janela normal e devolve janela estragada + máscara do que foi estragado | a criar |

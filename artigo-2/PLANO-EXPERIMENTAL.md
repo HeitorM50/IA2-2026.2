@@ -38,10 +38,78 @@ velocidade.
 O download é feito pelo código, nunca por etapa manual não documentada.
 A cópia do dataset não entra no Git (`artigo-*/src/data/` está no `.gitignore`).
 
-**Primeira tarefa, bloqueante:** verificar na prática a taxa de amostragem, a
-continuidade dos sinais e quanto existe de operação normal contínua. O autoencoder
-recorrente precisa de janelas longas sem buraco. Se o dataset não sustentar isso,
-a decisão muda — e muda melhor agora do que depois de escrever a Metodologia.
+### Verificação prática — feita em 06/10/2026
+
+O dataset foi baixado e inspecionado antes de qualquer decisão de modelagem.
+**Resultado: aprovado, com uma ressalva que muda o pré-processamento.**
+
+| Medida | Valor observado |
+| ------ | --------------- |
+| Sessões | 81 arquivos CSV, todos do mesmo veículo (Seat Leon), 2017–2018 |
+| Duração total | 70,0 h · mediana de 50,1 min por sessão · mínimo 12,2 min |
+| Canais | 10 nominais, presentes em 81/81 sessões |
+| Taxa de linha | ~11,3 Hz |
+| Lacunas > 2 s | 11 sessões afetadas, 45 lacunas, a maior de 603,9 s |
+
+#### A ressalva: a taxa de 11 Hz é falsa
+
+Cada linha repete o último valor conhecido de cada canal. A taxa de **atualização
+real** foi medida contando quantas vezes o valor de fato muda:
+
+| Canal | Taxa real | Decisão |
+| ----- | --------- | ------- |
+| `fluxo_ar` | 1,11 Hz | **usar** |
+| `rpm` | 1,07 Hz | **usar** |
+| `pressao_adm` | 0,86 Hz | **usar** |
+| `velocidade` | 0,61 Hz | **usar** |
+| `temp_adm` | 0,44 Hz | **usar** |
+| `pedal_d` | 0,33 Hz | **usar** |
+| `pedal_e` | 0,39 Hz | descartar — correlação de 0,99 com `pedal_d` |
+| `acelerador_abs` | 0,03 Hz | descartar — quase constante |
+| `temp_arref` | 0,03 Hz | descartar — quase constante |
+| `temp_ambiente` | 0,01 Hz | descartar — muda a cada ~100 s |
+
+**Consequência metodológica:** o pipeline reamostra para **1 Hz**, não 11 Hz.
+Treinar a 11 Hz faria o autoencoder aprender a copiar valores retidos e produziria
+um erro de reconstrução artificialmente baixo — resultado inflado e falso. Essa
+decisão precisa estar escrita na Metodologia, porque é exatamente o tipo de
+armadilha que o leitor atento procura.
+
+`pedal_d` e `pedal_e` são o par redundante do pedal do acelerador (dois sensores
+no mesmo pedal, padrão de segurança automotiva). Fica apenas `pedal_d` na tarefa
+principal. A redundância merece uma frase na Discussão: uma falha em só um dos dois
+produz uma divergência fisicamente impossível, e é justamente por isso que o carro
+carrega dois.
+
+#### Segmentação e janelas
+
+Cada sessão é cortada nas lacunas maiores que 2 s, e cada trecho contínuo vira um
+segmento independente. Isso é o análogo direto do buffer do `baja-telemetry-api`:
+a lacuna é operação normal, não anomalia, e não pode atravessar uma janela.
+
+Com janela de 60 s e passo de 10 s, sobre **6 canais a 1 Hz**:
+
+| | |
+| - | - |
+| Sessões aproveitadas | 77 (as 4 especiais ficam de fora) |
+| Segmentos contínuos | 85 · 19 descartados por terem menos de 60 s |
+| Amostras a 1 Hz | 235.340 (65,4 h) |
+| **Janelas** | **23.073** |
+| Tensor completo | 23.073 × 60 × 6 em float32 = 33,2 MB |
+
+Folga confortável. O treino roda em CPU, sem necessidade de Colab.
+
+#### As quatro sessões especiais
+
+Quatro arquivos fogem do padrão `Normal`/`Stau`/`Frei`: `Messfehler` (erro de
+medição), `Vollbremsung` (frenagem total), `Glatteis` (gelo) e `Beschleunigung`
+(aceleração). As três últimas descrevem **condição de direção**, não falha de
+sensor. Nenhuma apresenta valor globalmente fora da faixa da sessão de referência.
+
+Todas ficam **fora do conjunto de treino**, por precaução. A sessão `Messfehler`
+pode ser usada como verificação qualitativa na Discussão: um detector treinado só
+em operação normal deveria marcá-la mais do que marca uma sessão normal. É barato e
+é o único contato do artigo com uma anomalia que não foi injetada por nós.
 
 ## Representação canônica
 
