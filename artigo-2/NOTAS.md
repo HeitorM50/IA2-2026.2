@@ -8,13 +8,44 @@
 
 ## Dupla
 
-| Integrante | GitHub | Matrícula | Responsabilidade |
-| ---------- | ------ | --------- | ---------------- |
-| Heitor Macêdo Ricardo | `HeitorM50` | 241039073 | a definir |
-| Gustavo Xavier Evangelista | `guxvr` | 241025247 | a definir |
+Divisão em fatia vertical, como no Artigo 1: cada um leva código **e** seções,
+para que ninguém fique bloqueado esperando o outro e os dois conheçam o artigo
+inteiro na apresentação.
 
-A divisão em fatia vertical funcionou no Artigo 1 (cada um leva modelos **e**
-seções) e deve ser repetida. **Fechar a divisão é a primeira tarefa.**
+| Integrante | GitHub | Matrícula | Eixo |
+| ---------- | ------ | --------- | ---- |
+| Heitor Macêdo Ricardo | `HeitorM50` | 241039073 | **dados e falhas** — pipeline, injeção, execução · Metodologia, Discussão, Resumo |
+| Gustavo Xavier Evangelista | `guxvr` | 241025247 | **modelos e avaliação** — métricas, treino, modelos, relatório · Introdução, Resultados, `refs.bib` |
+
+| | Heitor | Gustavo |
+| - | ------ | ------- |
+| Código | #27 `config`/`data` · #28 `faults` · #31 Modelo A (3σ) · #34 `run` e execução | #29 `metrics` · #30 `train` · #32 Modelo B (PCA) · #33 Modelo C (LSTM) · #35 `report` |
+| Escrita | #37 Metodologia · #39 Discussão e Limitações · #41 Resumo e Conclusão | #36 Introdução e Trabalhos Relacionados · #38 Resultados · #40 `refs.bib` |
+| A quatro mãos | #42 revisão final · #43 entrega | |
+
+O andamento fica nas issues do GitHub, no milestone `Artigo 2 — 09/10/2026`,
+que vence em 08/10 — um dia antes do prazo real.
+
+### O caminho crítico, que é o que importa com 3 dias
+
+A **#27 é bloqueante**: todo o resto consome o tensor que ela produz. Por isso ela
+sai primeiro e, antes de estar pronta, o contrato de interface precisa estar
+publicado como comentário na própria issue:
+
+```
+X: float32 (n_janelas, 60, 6)
+canais: rpm, velocidade, fluxo_ar, pressao_adm, temp_adm, pedal_d
+sessao: (n_janelas,) — id da sessão de origem, para o split
+```
+
+Com esse contrato fechado, as issues #29, #30, #32 e #33 podem ser escritas contra
+um tensor sintético, sem esperar o pipeline real. **Quem não fizer isso vai ficar
+parado metade do prazo.**
+
+As issues que não dependem de nada e podem começar imediatamente: **#29**
+(métricas), **#36** (Introdução e Trabalhos Relacionados), **#40** (`refs.bib`) e
+**#37** (Metodologia). Escrever em paralelo com o código é obrigatório aqui — não
+há tempo para escrever só depois que os resultados saírem.
 
 ## Decisões do experimento
 
