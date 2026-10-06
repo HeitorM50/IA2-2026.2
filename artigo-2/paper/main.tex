@@ -1,0 +1,138 @@
+%==============================================================================
+% Artigo 2 - FGA0261 Inteligência Artificial II - 2026.2
+% Formato: IEEE conference (classe IEEEtran, máximo 4 páginas)
+% Entrega: 09/10/2026, pelo Microsoft Teams
+%
+% CONVENÇÃO DESTE ARQUIVO: uma frase por linha.
+% Isso não muda o PDF (o LaTeX junta as linhas) e mantém o git diff legível
+% quando as duas pessoas da dupla editam o mesmo parágrafo.
+%
+% Compilar: make no Linux; .\build.ps1 no Windows sem Perl/latexmk.
+%==============================================================================
+\documentclass[conference]{IEEEtran}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+% Para hifenização correta em português, descomente a linha abaixo.
+% Exige o pacote texlive-langportuguese no Arch.
+% \usepackage[brazil]{babel}
+
+\usepackage{cite}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{url}
+
+\graphicspath{{figs/}}
+% Gerado por src/report.py a partir dos JSON de src/results/.
+% Enquanto não existir, mantenha o \input comentado para o artigo compilar.
+% \input{results-generated.tex}
+
+\begin{document}
+
+\title{Detecção Não Supervisionada de Falhas de Sensor em Telemetria Veicular com Autoencoder Recorrente}
+
+\author{
+\IEEEauthorblockN{Gustavo Xavier Evangelista}
+\IEEEauthorblockA{\textit{FCTE - Faculdade de Ciências e Tecnologias em Engenharia} \\
+\textit{Universidade de Brasília} \\
+Brasília, Brasil \\
+Matrícula: 241025247 \\
+241025247@aluno.unb.br}
+\and
+\IEEEauthorblockN{Heitor Macêdo Ricardo}
+\IEEEauthorblockA{\textit{FCTE - Faculdade de Ciências e Tecnologias em Engenharia} \\
+\textit{Universidade de Brasília} \\
+Brasília, Brasil \\
+Matrícula: 241039073 \\
+241039073@aluno.unb.br}
+}
+
+\maketitle
+
+\begin{abstract}
+% 150-200 palavras, JÁ COM O NÚMERO PRINCIPAL DO RESULTADO.
+% Escrever por último, depois que a tabela estiver fechada.
+% Estrutura: contexto -> lacuna -> o que foi feito -> número principal -> implicação.
+\end{abstract}
+
+\begin{IEEEkeywords}
+% 4 a 6 termos separados por vírgula.
+\end{IEEEkeywords}
+
+%==============================================================================
+\section{Introdução}
+%==============================================================================
+% Orçamento: ~0,6 página.
+% Deve conter, nesta ordem:
+%   1. Contexto: telemetria veicular embarcada e por que falha de sensor importa.
+%   2. Lacuna: validação por faixa não detecta falha que permanece dentro da faixa.
+%   3. Pergunta de pesquisa, explícita e em uma frase.
+%   4. Frase de contribuição começando por "Este trabalho".
+
+%==============================================================================
+\section{Trabalhos Relacionados}
+%==============================================================================
+% Orçamento: ~0,5 página. De 5 a 8 trabalhos AGRUPADOS POR ABORDAGEM,
+% fechando com o parágrafo do diferencial deste artigo.
+% Grupos sugeridos:
+%   - detecção de anomalia por limiar e métodos estatísticos;
+%   - autoencoders para detecção de anomalia em série temporal;
+%   - trabalhos específicos de telemetria veicular e barramento CAN.
+
+%==============================================================================
+\section{Metodologia}
+%==============================================================================
+% Orçamento: ~1,0 página. É a seção que carrega o peso na Rota II.
+% Deve ser reproduzível só pela leitura. Subseções:
+
+\subsection{Conjunto de dados}
+% Origem, DOI, licença, canais, taxa de amostragem, quantidade de dado normal.
+
+\subsection{Representação canônica e janelamento}
+% Formato (tempo, sinal, valor); por que o janelamento usa frame_time e não
+% received_at; tamanho da janela e passo.
+
+\subsection{Protocolo de injeção de falhas}
+% As cinco classes, com a origem documentada de cada uma.
+% Esta subseção é o diferencial do artigo: cada falha precisa de procedência.
+
+\subsection{Modelos avaliados}
+% Limiar 3-sigma, PCA, autoencoder LSTM. Mesmo protocolo para os três.
+
+\subsection{Calibração do limiar e métricas}
+% Limiar calibrado SÓ na validação normal.
+% Justificar AUC-PR explicitamente pelo desbalanceamento. Definir latência.
+
+%==============================================================================
+\section{Resultados}
+%==============================================================================
+% Orçamento: ~0,8 página. Uma tabela principal e uma figura que responda a uma
+% pergunta. Os números vêm de src/results/ via report.py — nunca digitados.
+
+%==============================================================================
+\section{Discussão e Limitações}
+%==============================================================================
+% Orçamento: ~0,5 página.
+% Interpretar POR QUE cada detector ganha ou perde em cada classe de falha,
+% não repetir a tabela.
+% As limitações são cobradas nominalmente pelo plano de ensino: falhas injetadas
+% não são falhas reais; o dataset não é do carro da equipe; dados de um só veículo.
+
+%==============================================================================
+\section{Conclusão}
+%==============================================================================
+% Orçamento: ~0,2 página. De 3 a 4 frases, respondendo a pergunta da Introdução.
+% Nenhum resultado novo aqui.
+
+%==============================================================================
+% ATENÇÃO: o \nocite{*} abaixo existe só para o esqueleto compilar enquanto o
+% texto ainda não tem nenhum \cite. Ele força todas as entradas de refs.bib a
+% aparecerem. APAGUE esta linha assim que a primeira citação real for escrita,
+% senão referências não citadas vão para o PDF e queimam espaço das 4 páginas.
+\nocite{*}
+
+\bibliographystyle{IEEEtran}
+\bibliography{refs}
+
+\end{document}

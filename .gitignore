@@ -44,6 +44,12 @@ artigo-*/src/data/
 # --- Claude Code (local, não versionado) ---
 .claude/
 
+# --- arquivos de transporte (resultados ja versionados em src/results/) ---
+*.zip
+
+# --- notas pessoais, fora do versionamento ---
+artigo-*/EXPLICACAO-*.md
+
 # --- resultados dos experimentos ---
 # São pequenos e alimentam a tabela do artigo, então abrem exceção ao *.csv acima.
 !artigo-*/src/results/

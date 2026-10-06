@@ -106,7 +106,9 @@ IA2-2026.2/
     └── src/               código dos experimentos (PyTorch)
 ```
 
-Os artigos 2 e 3 vão ganhar pastas irmãs (`artigo-2/`, `artigo-3/`) com a mesma forma.
+`artigo-2/` já existe com a mesma forma (`NOTAS.md`, `PLANO-EXPERIMENTAL.md`,
+`paper/`, `src/`, `tests/`), acrescido de `src/README.md` com o guia de
+implementação. O `artigo-3/` vai ganhar uma pasta irmã.
 
 ## 7. Convenções obrigatórias neste repositório
 
@@ -170,22 +172,44 @@ No VS Code, a extensão `james-yu.latex-workshop` compila com o mesmo `latexmk`
 
 ## 8. Estado atual
 
-- [x] Repositório e esqueleto LaTeX do Artigo 1 montados
-- [x] Definir rota temática do Artigo 1 (I ou II)
-- [x] Escolher e citar o dataset público
-- [x] Implementar os experimentos em `artigo-1/src/`
-- [x] Executar a grade canônica de 3 modelos × 3 seeds e gerar os artefatos
+### Artigo 1 — entregue em 03/09/2026
+
+Concluído: rota I, BloodMNIST, três modelos × três seeds, artigo escrito e
+revisado. As decisões e o ambiente canônico estão em `artigo-1/NOTAS.md` e
+`artigo-1/PLANO-EXPERIMENTAL.md`.
+
+### Artigo 2 — prazo 09/10/2026 ⚠️
+
+Iniciado em **06/10**, com três dias de prazo. O escopo já é a versão enxuta.
+
+- [x] Tema definido: detecção não supervisionada de falha de sensor em telemetria
+      veicular com autoencoder recorrente (Rota II)
+- [x] Esqueleto de `artigo-2/` montado, LaTeX compilando limpo
+- [ ] Fechar a divisão de trabalho da dupla
+- [ ] Baixar e **verificar** o dataset (KIT, DOI `10.35097/1130`)
+- [ ] Implementar o pipeline em `artigo-2/src/` (ver `artigo-2/src/README.md`)
+- [ ] Executar a grade de 3 modelos × 3 seeds
 - [ ] Escrever o artigo
-- [ ] Revisar contra os 4 critérios de correção e o limite de 4 páginas
-- [ ] Subir no Teams (os **dois** integrantes, cada um na pasta da própria matrícula)
+- [ ] Revisar contra os 4 critérios e o limite de 4 páginas
+- [ ] Subir no Teams (os **dois**, cada um na pasta da própria matrícula)
 
-As decisões experimentais consolidadas e o ambiente canônico estão registrados em
-`artigo-1/NOTAS.md` e `artigo-1/PLANO-EXPERIMENTAL.md`.
+Decisões em `artigo-2/NOTAS.md`; protocolo em `artigo-2/PLANO-EXPERIMENTAL.md`.
 
-### Lembrete obrigatório para a Issue #10
+### Artigo 3 — prazo 05/11/2026
 
-`src/report.py` gera `src/results/resumo.csv` e a figura, mas ainda não gera a
-tabela LaTeX. Ao implementar a Issue #10, não digitar resultados a partir da
-memória: gerar/importar a tabela a partir de `resumo.csv` ou adicionar uma saída
-LaTeX ao relatório. Antes de fechar a issue, conferir mecanicamente que todos os
-valores do artigo coincidem com os nove JSONs canônicos.
+Rota III (XAI) ou IV (fairness). Duas trilhas candidatas já levantadas:
+explicabilidade sobre o detector do Artigo 2 (atribuição do erro de reconstrução
+por canal), ou uma RNN restrita pelo conectoma do *Drosophila* (FlyWire,
+DOI `10.5281/zenodo.10676866`) com camada de explicabilidade.
+
+## 9. Regra permanente — nenhum número digitado à mão
+
+Nenhum valor de resultado entra no `.tex` por digitação. O `report.py` de cada
+artigo lê os JSON de `src/results/`, consolida em `resumo.csv` e emite macros
+LaTeX em `paper/results-generated.tex`, que o `main.tex` importa com `\input`.
+O artigo cita a macro, nunca o número.
+
+Isso foi implementado no Artigo 1 (Issue #10, fechada em 08/09/2026) e vale para
+todos os artigos seguintes. Se algum valor precisar aparecer no texto e ainda não
+existir macro para ele, a correção é acrescentar a macro ao `report.py` — não
+digitar o número.
