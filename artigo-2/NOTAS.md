@@ -147,6 +147,37 @@ Anotar aqui, com data, cada decisão fechada. Isso vira material da Metodologia.
   cinco classes em rodízio. A fração é baixa de propósito: é o desbalanceamento
   que justifica o AUC-PR, e inflá-lo deixaria o problema artificialmente fácil.
 
+- **06/10/2026 — Modelo A implementado (#31).** `src/models/base.py` fixa a
+  interface comum aos três detectores e `src/models/baseline.py` traz o limiar.
+  Todo detector produz escore **por amostra**, não só por janela: sem isso a
+  latência de detecção da #29 não tem como ser medida.
+- **06/10/2026 — agregação única.** O escore de janela é o **máximo** do escore
+  por amostra, igual para os três modelos, vindo de `DetectionConfig`. Detecção é
+  sobre o pior instante, e isso mantém o escore de janela coerente com a latência.
+- **06/10/2026 — a regra nominal de 3σ é inutilizável como enunciada.** Ela
+  dispara em ~62 % das janelas **normais**: cada janela traz 60 amostras × 6
+  canais = 360 leituras, e `1 − (1 − 0,0027)^360 ≈ 0,62`. É comparação múltipla,
+  medida e confirmada em teste. Rende uma frase na Discussão: a regra ingênua não
+  é só cega para falha silenciosa, ela é impraticável no ponto de operação que lhe
+  dá nome. Isso **não** distorce a comparação, porque o AUC-PR é baseado em
+  ordenação e o limiar da avaliação vem da calibração na validação normal (#30).
+- **06/10/2026 — sondagem do Modelo A no teste real** (seed 42, execução única,
+  **não canônica** — os números do artigo virão da grade da #34). Fração de
+  janelas de cada classe que pontuam acima do percentil 95 do normal:
+
+  | Classe | Escore médio | Acima do p95 normal |
+  | ------ | -----------: | ------------------: |
+  | normal | 2,45 | — |
+  | pico | 6,72 | **99,2 %** |
+  | ganho | 4,71 | 27,3 % |
+  | lacuna | 2,45 | 6,3 % |
+  | travado | 2,45 | 3,1 % |
+  | deriva | 3,35 | 2,3 % |
+
+  AUC-PR global de 0,5131 sobre taxa-base de 20 %. O limiar acerta o pico quase
+  sempre e fica **no nível do acaso** em travado, lacuna e deriva — três das cinco
+  classes. É contra esse piso que o autoencoder precisa mostrar valor.
+
 ## O que NÃO pode cair, por mais que aperte
 
 1. A linha de base 3σ — sem ela o resultado do autoencoder não significa nada.

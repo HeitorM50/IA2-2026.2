@@ -9,7 +9,8 @@ Antes de escrever qualquer coisa aqui, acionar a skill `experimento-pytorch`.
 | `config.py` | fonte **única** de seeds, janela, passo, hiperparâmetros e caminhos. Nenhuma constante duplicada em outro arquivo | **pronto** (#27) |
 | `data.py` | download do dataset, reamostragem para 1 Hz, segmentação nas lacunas, janelamento e split por sessão. Saída em NumPy, sem depender de PyTorch | **pronto** (#27) |
 | `faults.py` | as cinco injeções de falha em unidades físicas, mais `violates_range` (o `if` do firmware) e `build_evaluation_set` | **pronto** (#28) |
-| `models/baseline.py` | limiar 3σ por canal | a criar |
+| `models/base.py` | interface comum: `fit`, `score_samples`, `score_windows`, `predict`, `n_parameters` | **pronto** (#31) |
+| `models/baseline.py` | limiar 3σ por canal | **pronto** (#31) |
 | `models/pca.py` | PCA como autoencoder linear, erro de reconstrução | a criar |
 | `models/autoencoder.py` | autoencoder LSTM sequência-a-sequência | a criar |
 | `train.py` | loop comum de treino (MSE de reconstrução) e calibração do limiar na validação normal | adaptar de `artigo-1/src/train.py` |

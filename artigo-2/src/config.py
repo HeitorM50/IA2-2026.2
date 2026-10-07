@@ -267,6 +267,54 @@ FAULT_LABELS_PT: dict[str, str] = {
 }
 
 
+@dataclass(frozen=True)
+class DetectionConfig:
+    """Protocolo comum de pontuação, idêntico para os três detectores.
+
+    A comparação do artigo só vale se os modelos forem avaliados exatamente da
+    mesma forma. Qualquer diferença de agregação ou de calibração entre eles
+    invalida a tabela.
+    """
+
+    # Cada detector produz um escore por amostra; o escore da janela é a
+    # agregação desses valores. O máximo é usado porque detecção é sobre o pior
+    # instante, e porque a latência — que é inerentemente por amostra — fica
+    # consistente com o escore de janela.
+    window_aggregation: str = "max"
+
+    # Ponto de operação nominal da linha de base: o `if` que um firmware faria
+    # dispara quando a leitura se afasta mais de 3 desvios da média de operação
+    # normal. Não é o limiar usado na avaliação — esse é calibrado na validação
+    # normal (#30) —, mas é a regra que dá nome ao modelo.
+    threshold_sigmas: float = 3.0
+
+    # Piso para o desvio por canal, evitando divisão por zero em canal constante.
+    min_std: float = 1e-8
+
+    def __post_init__(self) -> None:
+        if self.window_aggregation not in {"max", "mean"}:
+            raise ValueError("Agregação deve ser 'max' ou 'mean'.")
+        if self.threshold_sigmas <= 0:
+            raise ValueError("O limiar em desvios deve ser positivo.")
+        if self.min_std <= 0:
+            raise ValueError("O piso do desvio deve ser positivo.")
+
+    def as_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+
+DETECTION_CONFIG = DetectionConfig()
+
+# Nome curto de cada detector, usado no nome do JSON e na tabela do artigo.
+MODEL_NAMES: tuple[str, ...] = ("limiar", "pca", "autoencoder")
+
+MODEL_LABELS_PT: dict[str, str] = {
+    "limiar": "Limiar 3σ",
+    "pca": "PCA",
+    "autoencoder": "Autoencoder LSTM",
+}
+
+
 # Nome curto de cada coluna do CSV original, sem a unidade entre colchetes.
 # O dicionário cobre os dez canais do arquivo; `DataConfig.channels` escolhe
 # quais entram no experimento.
