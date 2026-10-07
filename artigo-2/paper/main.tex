@@ -83,26 +83,94 @@ Matrícula: 241039073 \\
 %==============================================================================
 \section{Metodologia}
 %==============================================================================
-% Orçamento: ~1,0 página. É a seção que carrega o peso na Rota II.
-% Deve ser reproduzível só pela leitura. Subseções:
 
 \subsection{Conjunto de dados}
-% Origem, DOI, licença, canais, taxa de amostragem, quantidade de dado normal.
 
-\subsection{Representação canônica e janelamento}
-% Formato (tempo, sinal, valor); por que o janelamento usa frame_time e não
-% received_at; tamanho da janela e passo.
+Foi utilizado o Automotive OBD-II Dataset \cite{weber2023automotive}, distribuído publicamente sob licença CC BY 4.0.
+A coleção reúne 81 sessões de condução de um mesmo veículo, registradas entre 2017 e 2018 pela porta de diagnóstico de bordo (OBD-II), somando 70,0 horas de operação.
+Cada sessão registra dez grandezas, entre as quais rotação do motor, velocidade, fluxo de ar admitido, pressão absoluta no coletor e duas leituras redundantes do pedal do acelerador.
+
+Quatro sessões cujo nome indica condição atípica de condução ou erro de medição foram removidas, restando 77: o detector é treinado apenas em operação normal, e essas sessões não oferecem garantia de o serem.
+
+\subsection{Representação canônica e reamostragem}
+
+As linhas do arquivo chegam a uma taxa nominal de 11,3\,Hz, mas essa taxa é aparente: cada linha repete o último valor conhecido de cada canal.
+A taxa real de atualização foi medida contando quantas vezes o valor efetivamente muda, e o canal mais rápido chega a 1,11\,Hz.
+Por esse motivo os sinais foram reamostrados para 1\,Hz, retendo o último valor válido de cada segundo.
+Reamostrar na taxa nominal faria o modelo de reconstrução aprender a copiar valores retidos, produzindo erro artificialmente baixo e desempenho inflado.
+
+Seis canais foram mantidos, por apresentarem taxa real de mudança superior a 0,3\,Hz e não serem redundantes entre si: rotação, velocidade, fluxo de ar, pressão no coletor, temperatura do ar admitido e posição do pedal.
+As duas leituras do pedal apresentam correlação de 0,99 entre si, por constituírem o par redundante do projeto de segurança do veículo, e apenas uma foi preservada.
+Os três canais restantes mudam a menos de 0,04\,Hz e foram descartados.
+
+\subsection{Segmentação e janelamento}
+
+Cada sessão foi dividida nos intervalos superiores a 2\,s sem amostra, e cada trecho contínuo passou a constituir um segmento independente.
+Intervalos longos são esperados em telemetria embarcada: sem conectividade, os quadros são acumulados em memória e transmitidos ao reestabelecer o enlace, e o maior observado foi de 603,9\,s.
+Trata-se de operação normal, de modo que um intervalo não pode atravessar uma janela sob pena de o detector aprender a sinalizar todo retorno à cobertura.
+
+Os segmentos foram recortados em janelas deslizantes de 60\,s com passo de 10\,s, descartando-se os 19 segmentos menores que uma janela.
+O procedimento produziu 85 segmentos contínuos e 23\,073 janelas, cada uma um tensor de 60 amostras por 6 canais.
+
+\subsection{Divisão e normalização}
+
+A divisão em treino, validação e teste foi feita \emph{por sessão}, nunca por janela.
+Janelas vizinhas compartilham 50 das 60 amostras, e um sorteio por janela colocaria trechos quase idênticos nos dois lados da avaliação.
+O sorteio das sessões usa semente própria e fixa, independente das sementes de treinamento, para que a variação entre execuções meça variação de treinamento e não troca das sessões avaliadas.
+
+A divisão resultou em 17\,229 janelas de treino (54 sessões), 2\,653 de validação (12 sessões) e 3\,191 de teste (11 sessões).
+As proporções por janela afastam-se das frações nominais de 70\,\%, 15\,\% e 15\,\% porque as sessões têm durações distintas, entre 12,2 e 134,7 minutos.
+A média e o desvio padrão de cada canal foram calculados exclusivamente sobre o treino e aplicados aos três conjuntos, evitando vazamento das estatísticas de avaliação para o ajuste.
 
 \subsection{Protocolo de injeção de falhas}
-% As cinco classes, com a origem documentada de cada uma.
-% Esta subseção é o diferencial do artigo: cada falha precisa de procedência.
+
+Como o detector é treinado sem rótulos de falha, as anomalias do conjunto de avaliação foram injetadas de forma controlada em janelas normais, o que torna conhecida a posição exata de cada falha.
+As cinco classes correspondem a modos de falha documentados em telemetria veicular embarcada, e não a perturbações arbitrárias.
+
+A \emph{falha de ganho} multiplica um canal por um fator constante, reproduzindo a troca de uma constante de escala no firmware sem atualização correspondente no servidor.
+O \emph{sensor travado} congela a leitura no último valor.
+A \emph{deriva} soma um viés que cresce linearmente até três desvios padrão do canal, reproduzindo deriva térmica.
+O \emph{pico} soma seis desvios padrão em três instantes isolados, reproduzindo ruído elétrico no barramento.
+A \emph{lacuna} repete o último valor por 3 a 8\,s, reproduzindo perda curta de pacotes.
+
+As injeções operam sobre as grandezas físicas, antes da normalização, pois um erro de escala só é interpretável na unidade original.
+Cada falha começa em um instante sorteado dentro da primeira metade da janela, garantindo trecho afetado suficiente para a medida de latência.
+Vinte por cento das janelas de validação e teste foram corrompidas, com as cinco classes em rodízio; o treino permanece íntegro.
+
+Aplicando-se limites de plausibilidade física a cada canal, nenhuma das 3\,191 janelas normais de teste é sinalizada, mas as falhas de ganho, sensor travado e lacuna atravessam a verificação em 100\,\% dos casos, contra 32,5\,\% de detecção para a deriva e 96,2\,\% para o pico.
+Três das cinco classes são invisíveis a uma regra de faixa, o que delimita o que um detector aprendido precisa acrescentar.
 
 \subsection{Modelos avaliados}
-% Limiar 3-sigma, PCA, autoencoder LSTM. Mesmo protocolo para os três.
 
-\subsection{Calibração do limiar e métricas}
-% Limiar calibrado SÓ na validação normal.
-% Justificar AUC-PR explicitamente pelo desbalanceamento. Definir latência.
+Os três detectores compartilham a mesma interface e o mesmo protocolo: são ajustados somente em janelas normais de treino, produzem um escore por amostra e agregam esse escore pelo máximo ao longo da janela.
+A agregação única é necessária para que a comparação meça o mecanismo de pontuação, e não a forma de resumir a janela.
+
+O \emph{limiar} constitui a linha de base não aprendida.
+Para cada canal, estima média e desvio padrão na operação normal e atribui a cada amostra o maior afastamento padronizado entre os canais, reproduzindo a verificação que seria escrita diretamente no firmware.
+
+A \emph{análise de componentes principais} (PCA) atua como autoencoder linear: projeta a janela em subespaço de menor dimensão, reconstrói e usa o erro de reconstrução como escore, respondendo se a não linearidade é necessária ao problema.
+
+O \emph{autoencoder recorrente} comprime a janela por uma rede de memória de longo e curto prazo (LSTM) \cite{hochreiter1997lstm} e a reconstrói a partir da representação latente \cite{goodfellow2016deep}.
+Por processar a janela como sequência, dispõe da dependência temporal que os dois primeiros ignoram.
+A dimensão latente é idêntica à do PCA, de modo que a diferença observada entre ambos seja atribuível à não linearidade e à memória, e não à capacidade de compressão.
+
+% PENDENTE (#32, #33): fixar e registrar aqui a dimensão latente, a arquitetura
+% exata do LSTM, o otimizador, a taxa de aprendizado, o tamanho do lote e o
+% critério de parada antecipada. Sem isso a seção não é reproduzível.
+
+\subsection{Calibração e métricas}
+
+O limiar de decisão de cada detector é calibrado sobre a distribuição de escores das janelas normais de validação, nunca sobre o teste, que é consultado uma única vez ao final.
+
+A métrica principal é a área sob a curva de precisão e revocação (AUC-PR).
+A escolha decorre do desequilíbrio entre as classes: janelas anômalas constituem 20\,\% do conjunto de avaliação, e nesse regime a acurácia é inexpressiva, pois um detector que classifique tudo como normal já alcança 80\,\%.
+A área sob a curva ROC também é inadequada, porque o grande número de verdadeiros negativos mantém a taxa de falso positivo baixa mesmo quando a precisão é ruim \cite{saito2015precision}; a AUC-PR, por depender da precisão, não apresenta essa complacência.
+
+São reportadas ainda a medida F1, a precisão e a revocação no limiar calibrado, bem como o número de parâmetros aprendidos.
+Acrescenta-se a \emph{latência de detecção}, definida como o número de amostras entre o início da falha e o instante em que o escore cruza o limiar.
+A latência é relevante porque um detector que sinalize a falha tarde demais não cumpre a função de alarme, ainda que sua AUC-PR seja alta.
+
+Os resultados foram obtidos com três sementes, e são reportados como média e desvio padrão entre as execuções.
 
 %==============================================================================
 \section{Resultados}
@@ -126,12 +194,6 @@ Matrícula: 241039073 \\
 % Nenhum resultado novo aqui.
 
 %==============================================================================
-% ATENÇÃO: o \nocite{*} abaixo existe só para o esqueleto compilar enquanto o
-% texto ainda não tem nenhum \cite. Ele força todas as entradas de refs.bib a
-% aparecerem. APAGUE esta linha assim que a primeira citação real for escrita,
-% senão referências não citadas vão para o PDF e queimam espaço das 4 páginas.
-\nocite{*}
-
 \bibliographystyle{IEEEtran}
 \bibliography{refs}
 

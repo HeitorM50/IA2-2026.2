@@ -178,6 +178,20 @@ Anotar aqui, com data, cada decisão fechada. Isso vira material da Metodologia.
   sempre e fica **no nível do acaso** em travado, lacuna e deriva — três das cinco
   classes. É contra esse piso que o autoencoder precisa mostrar valor.
 
+- **07/10/2026 — Metodologia escrita (#37).** Ocupa **0,95 página** medida no PDF
+  compilado, dentro do orçamento de 1,0. O `\nocite{*}` temporário do esqueleto foi
+  removido, já que existem citações reais; o conjunto de dados entrou no `refs.bib`
+  como `weber2023automotive`, com DOI.
+- **07/10/2026 — pendência na Metodologia:** a subseção de modelos descreve o
+  protocolo, mas a dimensão latente, a arquitetura do LSTM, o otimizador, a taxa de
+  aprendizado, o tamanho do lote e o critério de parada **ainda não existem** — eles
+  são fixados nas #32 e #33. Há um comentário `% PENDENTE` no `main.tex` marcando o
+  ponto exato. Sem esses números a seção não é reproduzível, que é o critério de
+  correção nº 2.
+- **07/10/2026 — orçamento por palavras não serve.** A estimativa de ~1000 palavras
+  por página estava errada: o IEEE em duas colunas comporta cerca de 1240. Medir o
+  espaço no PDF compilado, não contar palavras.
+
 ## O que NÃO pode cair, por mais que aperte
 
 1. A linha de base 3σ — sem ela o resultado do autoencoder não significa nada.
