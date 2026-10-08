@@ -298,6 +298,10 @@ def build_evaluation_set(
     normal**. A fração corrompida é deliberadamente pequena: é esse
     desbalanceamento que justifica o AUC-PR como métrica principal, e inflá-lo
     deixaria o problema artificialmente fácil.
+
+    Injeções sem efeito observável são descartadas e substituídas por outra
+    janela. Toda janela marcada como anômala tem, portanto, ao menos uma amostra
+    efetivamente alterada.
     """
 
     if windows.ndim != 3:
@@ -321,21 +325,41 @@ def build_evaluation_set(
     mascaras = np.zeros((n, windows.shape[1]), dtype=bool)
     inicios = np.full(n, -1, dtype=np.int32)
 
-    escolhidas = rng.choice(n, size=n_anomalas, replace=False)
     # Rodízio entre as classes: cada uma recebe aproximadamente a mesma fatia,
     # o que mantém a tabela por classe de falha com amostra comparável.
     atribuidas = np.array(FAULT_NAMES)[np.arange(n_anomalas) % len(FAULT_NAMES)]
 
-    for indice, nome in zip(escolhidas, atribuidas):
+    # Uma injeção pode não alterar nenhuma amostra: congelar um canal que já
+    # estava constante, ou dobrar um valor que vale zero, devolve a janela
+    # intacta. Rotular esse caso como anômalo criaria um positivo idêntico a uma
+    # janela normal — impossível de acertar e indefensável no artigo. Quando
+    # acontece, a janela é devolvida ao conjunto normal e outra é sorteada.
+    candidatas = iter(rng.permutation(n))
+    aceitas = 0
+    descartadas = 0
+
+    for nome in atribuidas:
         canal = data_cfg.channels.index(cfg.channel_for(nome))
-        resultado = INJECTORS[nome](
-            windows[indice], canal, rng, cfg, float(channel_std[canal])
-        )
-        corrompidas[indice] = resultado.X
-        rotulos[indice] = 1
-        classes[indice] = nome
-        mascaras[indice] = resultado.mask
-        inicios[indice] = resultado.start
+        for indice in candidatas:
+            resultado = INJECTORS[nome](
+                windows[indice], canal, rng, cfg, float(channel_std[canal])
+            )
+            if not resultado.mask.any():
+                descartadas += 1
+                continue
+            corrompidas[indice] = resultado.X
+            rotulos[indice] = 1
+            classes[indice] = nome
+            mascaras[indice] = resultado.mask
+            inicios[indice] = resultado.start
+            aceitas += 1
+            break
+        else:
+            raise RuntimeError(
+                f"As janelas disponíveis acabaram antes de completar as "
+                f"{n_anomalas} anomalias ({aceitas} aceitas, {descartadas} "
+                f"descartadas por não produzirem efeito observável)."
+            )
 
     return EvaluationSet(
         X=corrompidas.astype(np.float32, copy=False),

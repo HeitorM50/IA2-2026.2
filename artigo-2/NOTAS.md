@@ -194,6 +194,20 @@ Anotar aqui, com data, cada decisão fechada. Isso vira material da Metodologia.
   por página estava errada: o IEEE em duas colunas comporta cerca de 1240. Medir o
   espaço no PDF compilado, não contar palavras.
 
+- **08/10/2026 — bug corrigido na injeção de falhas.** A asserção de
+  `metrics.py`, escrita na #29, expôs um defeito do `faults.py` (#28): **12 de
+  638 janelas de teste (1,9 %)** eram rotuladas como anômalas sem terem nenhuma
+  amostra alterada. Congelar um canal que já estava constante, ou dobrar um valor
+  que vale zero, devolve a janela intacta. Por classe: lacuna 6,3 %, travado
+  2,3 %, ganho 0,8 %. Um positivo byte a byte idêntico a um negativo é impossível
+  de acertar por qualquer detector e seria indefensável na Metodologia.
+  `build_evaluation_set` passa a descartar a injeção sem efeito e sortear outra
+  janela, mantendo exata a contagem de anomalias e o rodízio entre as classes.
+- **08/10/2026 — sondagem do limiar após a correção** (seed 42, não canônica):
+  AUC-PR global de 0,5085; por classe, pico 0,9119, ganho 0,2800, deriva 0,1132,
+  travado 0,0504 e lacuna 0,0460. Confirma o piso: o limiar resolve o pico e é
+  inútil em travado, lacuna e deriva.
+
 ## O que NÃO pode cair, por mais que aperte
 
 1. A linha de base 3σ — sem ela o resultado do autoencoder não significa nada.

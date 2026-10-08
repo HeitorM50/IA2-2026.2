@@ -301,3 +301,40 @@ def test_conjunto_de_avaliacao_e_deterministico():
     assert np.array_equal(primeira.X, segunda.X)
     assert np.array_equal(primeira.y, segunda.y)
     assert list(primeira.fault) == list(segunda.fault)
+
+
+def test_nenhuma_janela_anomala_fica_sem_efeito():
+    """Uma falha que não altera nenhuma amostra é indistinguível de normal.
+
+    Congelar um canal já constante, ou dobrar um valor que vale zero, devolve a
+    janela intacta. Rotular esse caso como anômalo criaria um positivo idêntico
+    a um negativo — impossível de acertar por qualquer detector e indefensável
+    na Metodologia. A injeção precisa descartar e resortear.
+    """
+
+    rng = np.random.default_rng(40)
+    # Metade das janelas tem canais constantes, onde travar e lacuna não surtem
+    # efeito; é o caso que o dataset real apresenta quando o veículo está parado.
+    variaveis = np.stack([janela_realista(rng) for _ in range(200)])
+    constantes = np.zeros((200, DATA_CONFIG.window_s, DATA_CONFIG.n_channels), np.float32)
+    janelas = np.concatenate([variaveis, constantes])
+
+    conjunto = faults.build_evaluation_set(janelas, ESCALA, rng, FAULT_CONFIG)
+
+    anomalas = conjunto.y == 1
+    assert anomalas.sum() > 0
+    assert conjunto.mask[anomalas].any(axis=1).all(), (
+        "há janela marcada como anômala sem nenhuma amostra alterada"
+    )
+
+
+def test_injecao_falha_alto_quando_nao_ha_janela_utilizavel():
+    """Se nenhuma janela admitir falha observável, a execução precisa parar."""
+
+    constantes = np.zeros((100, DATA_CONFIG.window_s, DATA_CONFIG.n_channels), np.float32)
+    escala_nula = np.zeros(DATA_CONFIG.n_channels, dtype=np.float32)
+
+    with pytest.raises(RuntimeError, match="acabaram"):
+        faults.build_evaluation_set(
+            constantes, escala_nula, np.random.default_rng(41), FAULT_CONFIG
+        )
