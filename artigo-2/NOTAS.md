@@ -272,6 +272,20 @@ Anotar aqui, com data, cada decisão fechada. Isso vira material da Metodologia.
   métricas saíram bit a bit idênticas**, nos dezoito arquivos. Vale uma frase na
   Metodologia ou na Discussão.
 
+- **08/10/2026 — Resumo, palavras-chave e Conclusão escritos (#41).** Com eles o
+  artigo foi a 5 páginas e precisou de **0,41 página** de corte para caber em 4.
+- **08/10/2026 — onde o espaço estava.** A prosa somava 2,37 páginas, dentro do
+  orçamento em todas as seções; o excesso vinha de estrutura, não de texto. Cortes
+  aplicados, em ordem de rendimento: tabela de 6 linhas com `multirow` para 3
+  linhas com uma coluna de AUC-PR por agregação (que também lê melhor), figura de
+  2,8 para 2,0 polegadas de altura, os 4 subtítulos da Discussão removidos, os 7
+  subtítulos da Metodologia fundidos em 4, e dez pares de frases condensados.
+  Nenhum `\vspace` negativo, nenhuma mexida em fonte ou margem.
+- **08/10/2026 — revisão mecânica aprovada:** 4 páginas, zero `[?]`, zero
+  placeholder, figura e tabela com `\label` e citadas por `\ref`, 13 referências com
+  o dataset entre elas, `IEEEtran` intacto, uma frase por linha. O número do resumo
+  coincide com o da tabela e a conclusão não traz resultado novo.
+
 ## O que NÃO pode cair, por mais que aperte
 
 1. A linha de base 3σ — sem ela o resultado do autoencoder não significa nada.

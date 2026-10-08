@@ -110,9 +110,11 @@ def test_apenas_a_melhor_linha_vai_em_negrito(tmp_path):
 
     tabela = report.build_table(resumos)
 
-    assert tabela.count("\\textbf{Autoencoder LSTM}") == 1
-    assert tabela.count("\\textbf{PCA}") == 1
-    assert tabela.count("\\textbf{Limiar 3$\\sigma$}") == 0
+    # Uma linha por modelo e uma coluna por agregação: o destaque vai no VALOR
+    # da melhor célula de cada coluna, nunca no nome do modelo.
+    assert tabela.count("\\textbf{0,9000 $\\pm$ 0,0100}") == 2
+    for rotulo in report.MODEL_LABELS.values():
+        assert f"\\textbf{{{rotulo}}}" not in tabela
 
 
 def test_macros_cobrem_todos_os_modelos_e_classes(tmp_path):

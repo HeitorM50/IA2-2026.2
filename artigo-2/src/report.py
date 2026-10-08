@@ -223,46 +223,44 @@ def _best_model(resumo: dict[str, dict[str, Any]]) -> str:
 
 
 def build_table(resumos: dict[str, dict[str, dict[str, Any]]]) -> str:
-    """Tabela principal: os três modelos sob as duas agregações.
+    """Tabela principal: uma linha por modelo, uma coluna de AUC-PR por agregação.
 
-    A métrica principal é a AUC-PR e só a melhor linha de cada agregação vai em
-    negrito — negritar tudo não destaca nada. A coluna de custo fica porque o
-    compromisso desempenho/custo é parte do veredito.
+    O formato anterior repetia os três modelos em dois blocos com `multirow`,
+    gastando seis linhas para dizer o que cabe em três. Lado a lado, a inversão
+    do veredito entre as agregações também fica visível na mesma linha, que é o
+    ponto do artigo.
+
+    A melhor AUC-PR de cada coluna vai em negrito — negritar tudo não destaca
+    nada. A coluna de custo fica porque o compromisso desempenho/custo é parte
+    do veredito.
     """
+
+    melhores = {agg: _best_model(resumos[agg]) for agg in AGGREGATIONS}
 
     linhas = [
         "\\begin{table}[htbp]",
-        "\\caption{Desempenho no conjunto de teste sob as duas regras de agregação "
-        "do escore de janela (média $\\pm$ desvio padrão de três execuções). "
-        "A agregação inverte o veredito: sob o máximo os três detectores "
-        "praticamente empatam, enquanto sob a média o autoencoder se separa.}",
+        "\\caption{AUC-PR no conjunto de teste sob as duas regras de agregação do "
+        "escore de janela (média $\\pm$ desvio padrão de três execuções). "
+        "A agregação inverte o veredito: pelo máximo os três detectores "
+        "praticamente empatam, enquanto pela média o autoencoder se separa.}",
         "\\label{tab:resultados}",
         "\\centering",
-        "\\begin{tabular}{llcr}",
+        "\\begin{tabular}{lccr}",
         "\\toprule",
-        "\\textbf{Agregação} & \\textbf{Modelo} & \\textbf{AUC-PR} & "
+        "\\textbf{Modelo} & \\textbf{Máximo} & \\textbf{Média} & "
         "\\textbf{Parâm.} \\\\",
         "\\midrule",
     ]
 
-    for i, agregacao in enumerate(AGGREGATIONS):
-        resumo = resumos[agregacao]
-        melhor = _best_model(resumo)
-        rotulo = "Máximo" if agregacao == "max" else "Média"
-        for j, modelo in enumerate(MODELS):
-            entrada = resumo[modelo]
-            celula_agg = f"\\multirow{{3}}{{*}}{{{rotulo}}}" if j == 0 else ""
-            valor = _mean_std(entrada["auc_pr"], 4)
-            nome = MODEL_LABELS[modelo]
-            if modelo == melhor:
+    for modelo in MODELS:
+        celulas = [MODEL_LABELS[modelo]]
+        for agregacao in AGGREGATIONS:
+            valor = _mean_std(resumos[agregacao][modelo]["auc_pr"], 4)
+            if melhores[agregacao] == modelo:
                 valor = f"\\textbf{{{valor}}}"
-                nome = f"\\textbf{{{nome}}}"
-            linhas.append(
-                f"{celula_agg} & {nome} & {valor} & "
-                f"{_integer(entrada['parameters'])} \\\\"
-            )
-        if i == 0:
-            linhas.append("\\midrule")
+            celulas.append(valor)
+        celulas.append(_integer(resumos["max"][modelo]["parameters"]))
+        linhas.append(" & ".join(celulas) + " \\\\")
 
     linhas += ["\\bottomrule", "\\end{tabular}", "\\end{table}"]
     return "\n".join(linhas)
@@ -345,7 +343,9 @@ def build_figure(
     import matplotlib.pyplot as plt
     import numpy as np
 
-    figura, eixos = plt.subplots(1, 2, figsize=(7.0, 2.8), sharey=True)
+    # Altura enxuta de propósito: o artigo tem limite rígido de quatro páginas e
+    # a figura é renderizada na largura de uma coluna.
+    figura, eixos = plt.subplots(1, 2, figsize=(7.0, 2.0), sharey=True)
     posicoes = np.arange(len(FAULTS))
     largura = 0.26
 

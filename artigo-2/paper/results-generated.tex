@@ -82,20 +82,16 @@
 % --- tabela principal, inserida no texto por \ResultTable ---
 \newcommand{\ResultTable}{%
 \begin{table}[htbp]
-\caption{Desempenho no conjunto de teste sob as duas regras de agregação do escore de janela (média $\pm$ desvio padrão de três execuções). A agregação inverte o veredito: sob o máximo os três detectores praticamente empatam, enquanto sob a média o autoencoder se separa.}
+\caption{AUC-PR no conjunto de teste sob as duas regras de agregação do escore de janela (média $\pm$ desvio padrão de três execuções). A agregação inverte o veredito: pelo máximo os três detectores praticamente empatam, enquanto pela média o autoencoder se separa.}
 \label{tab:resultados}
 \centering
-\begin{tabular}{llcr}
+\begin{tabular}{lccr}
 \toprule
-\textbf{Agregação} & \textbf{Modelo} & \textbf{AUC-PR} & \textbf{Parâm.} \\
+\textbf{Modelo} & \textbf{Máximo} & \textbf{Média} & \textbf{Parâm.} \\
 \midrule
-\multirow{3}{*}{Máximo} & Limiar 3$\sigma$ & 0,5009 $\pm$ 0,0066 & 12 \\
- & PCA & 0,4833 $\pm$ 0,0053 & 6\,120 \\
- & \textbf{Autoencoder LSTM} & \textbf{0,5109 $\pm$ 0,0067} & 12\,246 \\
-\midrule
-\multirow{3}{*}{Média} & Limiar 3$\sigma$ & 0,3814 $\pm$ 0,0102 & 12 \\
- & PCA & 0,5067 $\pm$ 0,0094 & 6\,120 \\
- & \textbf{Autoencoder LSTM} & \textbf{0,5634 $\pm$ 0,0172} & 12\,246 \\
+Limiar 3$\sigma$ & 0,5009 $\pm$ 0,0066 & 0,3814 $\pm$ 0,0102 & 12 \\
+PCA & 0,4833 $\pm$ 0,0053 & 0,5067 $\pm$ 0,0094 & 6\,120 \\
+Autoencoder LSTM & \textbf{0,5109 $\pm$ 0,0067} & \textbf{0,5634 $\pm$ 0,0172} & 12\,246 \\
 \bottomrule
 \end{tabular}
 \end{table}

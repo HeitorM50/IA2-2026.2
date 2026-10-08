@@ -53,13 +53,16 @@ Matrícula: 241039073 \\
 \maketitle
 
 \begin{abstract}
-% 150-200 palavras, JÁ COM O NÚMERO PRINCIPAL DO RESULTADO.
-% Escrever por último, depois que a tabela estiver fechada.
-% Estrutura: contexto -> lacuna -> o que foi feito -> número principal -> implicação.
+Sistemas de telemetria veicular validam cada canal contra uma faixa física admissível, procedimento que não detecta falhas cuja leitura permanece plausível enquanto perde a relação com os demais sinais.
+Este trabalho avalia se um detector treinado apenas em operação normal cobre essa lacuna, sem depender de histórico rotulado de falhas.
+Foram comparados um limiar estatístico, a análise de componentes principais e um autoencoder recorrente sobre 23\,073 janelas do Automotive OBD-II Dataset, com cinco classes de falha injetadas de forma controlada e desempenho medido por área sob a curva de precisão e revocação (AUC-PR).
+O autoencoder recorrente alcançou \ResultAutoencoderAucPrMean{} contra \ResultLimiarAucPrMean{} da linha de base, e sua vantagem concentra-se na deriva, cuja assinatura existe apenas na evolução temporal.
+O resultado mais relevante, porém, é que a regra de agregação do escore ao longo da janela inverte o veredito: sob agregação pelo máximo os três detectores ficam a menos de três centésimos entre si.
+A escolha dessa regra precede, portanto, qualquer comparação entre arquiteturas.
 \end{abstract}
 
 \begin{IEEEkeywords}
-% 4 a 6 termos separados por vírgula.
+detecção de anomalias, autoencoder, telemetria veicular, aprendizado não supervisionado, séries temporais multivariadas
 \end{IEEEkeywords}
 
 %==============================================================================
@@ -106,45 +109,37 @@ O diferencial deste artigo está em avaliar falhas de sensor, e não ataques ao 
 \subsection{Conjunto de dados}
 
 Foi utilizado o Automotive OBD-II Dataset \cite{weber2023automotive}, distribuído publicamente sob licença CC BY 4.0.
-A coleção reúne 81 sessões de condução de um mesmo veículo, registradas entre 2017 e 2018 pela porta de diagnóstico de bordo (OBD-II), somando 70,0 horas de operação.
-Cada sessão registra dez grandezas, entre as quais rotação do motor, velocidade, fluxo de ar admitido, pressão absoluta no coletor e duas leituras redundantes do pedal do acelerador.
+A coleção reúne 81 sessões de condução de um mesmo veículo, registradas entre 2017 e 2018 pela porta de diagnóstico de bordo (OBD-II), somando 70,0 horas de operação e dez grandezas por sessão.
 
 Quatro sessões cujo nome indica condição atípica de condução ou erro de medição foram removidas, restando 77: o detector é treinado apenas em operação normal, e essas sessões não oferecem garantia de o serem.
 
-\subsection{Representação canônica e reamostragem}
+\subsection{Pré-processamento}
 
 As linhas do arquivo chegam a uma taxa nominal de 11,3\,Hz, mas essa taxa é aparente: cada linha repete o último valor conhecido de cada canal.
-A taxa real de atualização foi medida contando quantas vezes o valor efetivamente muda, e o canal mais rápido chega a 1,11\,Hz.
-Por esse motivo os sinais foram reamostrados para 1\,Hz, retendo o último valor válido de cada segundo.
+Contando quantas vezes o valor efetivamente muda, o canal mais rápido chega a 1,11\,Hz, razão pela qual os sinais foram reamostrados para 1\,Hz, retendo o último valor válido de cada segundo.
 Reamostrar na taxa nominal faria o modelo de reconstrução aprender a copiar valores retidos, produzindo erro artificialmente baixo e desempenho inflado.
 
 Seis canais foram mantidos, por apresentarem taxa real de mudança superior a 0,3\,Hz e não serem redundantes entre si: rotação, velocidade, fluxo de ar, pressão no coletor, temperatura do ar admitido e posição do pedal.
-As duas leituras do pedal apresentam correlação de 0,99 entre si, por constituírem o par redundante do projeto de segurança do veículo, e apenas uma foi preservada.
-Os três canais restantes mudam a menos de 0,04\,Hz e foram descartados.
+As duas leituras do pedal, redundantes por projeto de segurança, apresentam correlação de 0,99 e apenas uma foi preservada; os três canais restantes mudam a menos de 0,04\,Hz e foram descartados.
 
-\subsection{Segmentação e janelamento}
 
 Cada sessão foi dividida nos intervalos superiores a 2\,s sem amostra, e cada trecho contínuo passou a constituir um segmento independente.
-Intervalos longos são esperados em telemetria embarcada: sem conectividade, os quadros são acumulados em memória e transmitidos ao reestabelecer o enlace, e o maior observado foi de 603,9\,s.
-Trata-se de operação normal, de modo que um intervalo não pode atravessar uma janela sob pena de o detector aprender a sinalizar todo retorno à cobertura.
+Intervalos longos são esperados: sem conectividade, os quadros são acumulados e transmitidos ao reestabelecer o enlace, e o maior observado foi de 603,9\,s.
+Por ser operação normal, um intervalo não pode atravessar uma janela, sob pena de o detector sinalizar todo retorno à cobertura.
 
 Os segmentos foram recortados em janelas deslizantes de 60\,s com passo de 10\,s, descartando-se os 19 segmentos menores que uma janela.
 O procedimento produziu 85 segmentos contínuos e 23\,073 janelas, cada uma um tensor de 60 amostras por 6 canais.
 
-\subsection{Divisão e normalização}
 
-A divisão em treino, validação e teste foi feita \emph{por sessão}, nunca por janela.
-Janelas vizinhas compartilham 50 das 60 amostras, e um sorteio por janela colocaria trechos quase idênticos nos dois lados da avaliação.
+A divisão em treino, validação e teste foi feita \emph{por sessão}, nunca por janela: janelas vizinhas compartilham 50 das 60 amostras, e um sorteio por janela colocaria trechos quase idênticos nos dois lados da avaliação.
 O sorteio das sessões usa semente própria e fixa, independente das sementes de treinamento, para que a variação entre execuções meça variação de treinamento e não troca das sessões avaliadas.
 
-A divisão resultou em 17\,229 janelas de treino (54 sessões), 2\,653 de validação (12 sessões) e 3\,191 de teste (11 sessões).
-As proporções por janela afastam-se das frações nominais de 70\,\%, 15\,\% e 15\,\% porque as sessões têm durações distintas, entre 12,2 e 134,7 minutos.
+A divisão resultou em 17\,229 janelas de treino (54 sessões), 2\,653 de validação (12 sessões) e 3\,191 de teste (11 sessões); as proporções afastam-se das frações nominais porque as sessões têm durações distintas, entre 12,2 e 134,7 minutos.
 A média e o desvio padrão de cada canal foram calculados exclusivamente sobre o treino e aplicados aos três conjuntos, evitando vazamento das estatísticas de avaliação para o ajuste.
 
 \subsection{Protocolo de injeção de falhas}
 
-Como o detector é treinado sem rótulos de falha, as anomalias do conjunto de avaliação foram injetadas de forma controlada em janelas normais, o que torna conhecida a posição exata de cada falha.
-As cinco classes correspondem a modos de falha documentados em telemetria veicular embarcada, e não a perturbações arbitrárias.
+Como o detector é treinado sem rótulos, as anomalias de avaliação foram injetadas de forma controlada em janelas normais, o que torna conhecida a posição exata de cada falha; as cinco classes correspondem a modos documentados em telemetria embarcada, não a perturbações arbitrárias.
 
 A \emph{falha de ganho} multiplica um canal por um fator constante, reproduzindo a troca de uma constante de escala no firmware sem atualização correspondente no servidor.
 O \emph{sensor travado} congela a leitura no último valor.
@@ -161,8 +156,7 @@ Três das cinco classes são invisíveis a uma regra de faixa, o que delimita o 
 
 \subsection{Modelos avaliados}
 
-Os três detectores compartilham a mesma interface e o mesmo protocolo: são ajustados somente em janelas normais de treino, produzem um escore por amostra e agregam esse escore pelo máximo ao longo da janela.
-A agregação única é necessária para que a comparação meça o mecanismo de pontuação, e não a forma de resumir a janela.
+Os três detectores compartilham o mesmo protocolo: são ajustados somente em janelas normais de treino, produzem um escore por amostra e o agregam pelo máximo ao longo da janela, agregação única sem a qual a comparação mediria a forma de resumir a janela em vez do mecanismo de pontuação.
 
 O \emph{limiar} constitui a linha de base não aprendida.
 Para cada canal, estima média e desvio padrão na operação normal e atribui a cada amostra o maior afastamento padronizado entre os canais, reproduzindo a verificação que seria escrita diretamente no firmware.
@@ -171,14 +165,11 @@ A \emph{análise de componentes principais} (PCA) atua como autoencoder linear: 
 
 O \emph{autoencoder recorrente} comprime a janela por uma rede de memória de longo e curto prazo (LSTM) \cite{hochreiter1997lstm} e a reconstrói a partir da representação latente \cite{goodfellow2016deep}.
 Por processar a janela como sequência, dispõe da dependência temporal que os dois primeiros ignoram.
-A dimensão latente é idêntica à do PCA, de modo que a diferença observada entre ambos seja atribuível à não linearidade e à memória, e não à capacidade de compressão.
-
-No PCA e no autoencoder, a dimensão latente foi fixada em 16.
+A dimensão latente foi fixada em 16 para ambos, de modo que a diferença entre eles seja atribuível à não linearidade e à memória, e não à capacidade de compressão.
 O codificador recorrente possui uma camada LSTM com 32 unidades seguida de projeção linear para o gargalo, enquanto o decodificador recebe esse vetor repetido pelos 60 instantes, emprega outra camada LSTM com 32 unidades e projeta a saída para os seis canais.
 O ajuste minimizou o erro quadrático médio com AdamW, taxa de aprendizado de $10^{-3}$, decaimento de pesos de $10^{-4}$ e lotes de 64 janelas, por no máximo 30 épocas.
 O treinamento foi interrompido após cinco épocas sem redução mínima de $10^{-4}$ na perda da validação normal, restaurando-se os parâmetros da melhor época.
 
-\subsection{Calibração e métricas}
 
 O limiar de decisão de cada detector é calibrado sobre a distribuição de escores das janelas normais de validação, nunca sobre o teste, que é consultado uma única vez ao final.
 
@@ -186,9 +177,8 @@ A métrica principal é a área sob a curva de precisão e revocação (AUC-PR).
 A escolha decorre do desequilíbrio entre as classes: janelas anômalas constituem 20\,\% do conjunto de avaliação, e nesse regime a acurácia é inexpressiva, pois um detector que classifique tudo como normal já alcança 80\,\%.
 A área sob a curva ROC também é inadequada, porque o grande número de verdadeiros negativos mantém a taxa de falso positivo baixa mesmo quando a precisão é ruim \cite{saito2015precision}; a AUC-PR, por depender da precisão, não apresenta essa complacência.
 
-São reportadas ainda a medida F1, a precisão e a revocação no limiar calibrado, bem como o número de parâmetros aprendidos.
-Acrescenta-se a \emph{latência de detecção}, definida como o número de amostras entre o início da falha e o instante em que o escore cruza o limiar.
-A latência é relevante porque um detector que sinalize a falha tarde demais não cumpre a função de alarme, ainda que sua AUC-PR seja alta.
+São reportadas ainda F1, precisão e revocação no limiar calibrado, o número de parâmetros e a \emph{latência de detecção} --- o número de amostras entre o início da falha e o cruzamento do limiar.
+A latência importa porque um detector que sinalize tarde demais não cumpre a função de alarme, ainda que sua AUC-PR seja alta.
 
 Os resultados foram obtidos com três sementes, e são reportados como média e desvio padrão entre as execuções.
 
@@ -222,7 +212,6 @@ Assim, o achado central não é a superioridade universal de um detector, mas a 
 \section{Discussão e Limitações}
 %==============================================================================
 
-\subsection{A regra de agregação decide o veredito}
 
 O resultado mais informativo do experimento não está em qual detector vence, e sim em quanto a resposta depende de uma decisão de protocolo aparentemente secundária.
 Sob agregação pelo máximo os três detectores ficam a menos de três centésimos de distância em AUC-PR, e a tabela converge para um referendo sobre a classe pico.
@@ -231,7 +220,6 @@ Sob agregação pela média o autoencoder passa a \ResultAutoencoderAucPrMean{} 
 Tomar o máximo faz o escore depender de um único instante, privilegiando a falha pontual e descartando a informação de que a degradação persiste; tomar a média dilui o pico isolado entre sessenta amostras e acumula o desvio sustentado.
 Nenhuma das duas é correta em absoluto, pois medem fenômenos diferentes, e a escolha precede qualquer comparação entre modelos.
 
-\subsection{Onde o autoencoder se separa}
 
 A vantagem do autoencoder recorrente concentra-se na deriva, com \ResultAutoencoderDerivaMean{} sob agregação pela média contra \ResultPcaDerivaMean{} do PCA.
 Como ambos comprimem para a mesma dimensão latente, a diferença decorre da não linearidade e da leitura sequencial, e não da capacidade de compressão: a deriva é o modo de falha cuja assinatura existe apenas na evolução temporal, pois nenhum instante isolado é anômalo.
@@ -239,7 +227,6 @@ Como ambos comprimem para a mesma dimensão latente, a diferença decorre da nã
 O comportamento oposto aparece no pico, onde o PCA alcança \ResultPcaPicoMax{} sob agregação pelo máximo e supera o autoencoder.
 Uma projeção linear reconstrói mal um valor extremo isolado, enquanto a rede recorrente acomoda parcialmente a perturbação e reduz o próprio erro: a capacidade que beneficia a deriva prejudica o pico.
 
-\subsection{O que o experimento não resolve}
 
 As classes sensor travado e lacuna permanecem próximas do acaso nos três detectores e nas duas agregações.
 Ambas foram injetadas em sinais que atravessam longos trechos genuinamente constantes em operação normal, como a velocidade com o veículo parado; congelar um sinal já congelado não produz assinatura detectável, de modo que o resultado mede a inadequação do par falha--canal, e não a incapacidade dos modelos.
@@ -247,9 +234,8 @@ Ambas foram injetadas em sinais que atravessam longos trechos genuinamente const
 A progressão entre as três estratégias é, ainda assim, consistente: a validação de faixa não sinaliza nenhuma janela com ganho, sensor travado ou lacuna, a linha de base estatística recupera parte do ganho, e o detector aprendido acrescenta a deriva.
 Cada nível incorpora o que o anterior descartava: o valor isolado, depois sua distribuição, por fim a relação temporal entre canais.
 
-\subsection{Limitações}
 
-As anomalias avaliadas são \emph{injetadas}, não observadas: o protocolo controla posição e severidade, o que permite medir latência e desempenho por classe, mas não garante que falhas reais apresentem a mesma assinatura.
+Quanto às limitações, as anomalias avaliadas são \emph{injetadas}, não observadas: o protocolo controla posição e severidade, o que permite medir latência e desempenho por classe, mas não garante que falhas reais apresentem a mesma assinatura.
 Os dados provêm de um único veículo e não contêm os canais do protótipo de competição que motivou o trabalho, de modo que a validade externa restringe-se a telemetria de arquitetura semelhante.
 A reamostragem para 1\,Hz descarta dinâmica rápida que um barramento dedicado registraria.
 
@@ -259,8 +245,11 @@ As três execuções por configuração sustentam estimativa de dispersão, não
 %==============================================================================
 \section{Conclusão}
 %==============================================================================
-% Orçamento: ~0,2 página. De 3 a 4 frases, respondendo a pergunta da Introdução.
-% Nenhum resultado novo aqui.
+
+Um autoencoder recorrente treinado apenas em operação normal supera os detectores estatístico e linear na identificação de falhas de sensor injetadas, mas a margem depende criticamente de como o escore por amostra é agregado em escore de janela.
+A vantagem da arquitetura recorrente restringe-se às falhas sustentadas, com destaque para a deriva, enquanto o valor extremo isolado é melhor capturado por reconstrução linear.
+Falhas injetadas em canais que permanecem naturalmente constantes em operação normal não produzem assinatura detectável por nenhum dos três detectores, o que indica que a escolha do par falha--canal condiciona a avaliação tanto quanto a arquitetura.
+Trabalhos futuros devem tratar a regra de agregação como parâmetro a ser calibrado junto ao detector, e não como convenção fixada antes do experimento.
 
 %==============================================================================
 \bibliographystyle{IEEEtran}
