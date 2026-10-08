@@ -89,7 +89,7 @@ def test_grava_um_json_por_modelo_e_semente_de_forma_deterministica(
     monkeypatch.setattr("src.run.load_dataset", lambda normalize: object())
     monkeypatch.setattr(
         "src.run._execute_pair",
-        lambda model, seed, dataset, config: _result(model, seed),
+        lambda model, seed, dataset, config, detection: _result(model, seed),
     )
 
     paths = run_experiments(
@@ -122,7 +122,7 @@ def test_resultado_existente_exige_resume_ou_overwrite(
     monkeypatch.setattr("src.run.load_dataset", lambda normalize: object())
     monkeypatch.setattr(
         "src.run._execute_pair",
-        lambda model, seed, dataset, config: _result(model, seed),
+        lambda model, seed, dataset, config, detection: _result(model, seed),
     )
     paths = run_experiments(["limiar"], [42], tmp_path)
 

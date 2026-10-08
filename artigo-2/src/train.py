@@ -435,6 +435,9 @@ def train_eval(
         "schema_version": 1,
         "model": model.name,
         "seed": seed,
+        # Sem isto, duas execucoes sob agregacoes diferentes ficam
+        # indistinguiveis no disco.
+        "window_aggregation": detection_config.window_aggregation,
         "dataset": {
             "name": DATA_CONFIG.dataset_name,
             "window_shape": list(X_train.shape[1:]),

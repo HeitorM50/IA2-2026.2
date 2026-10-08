@@ -1,0 +1,416 @@
+{
+  "calibration": {
+    "normal_windows": 2122,
+    "score_mean": 0.19424293320831215,
+    "score_std": 0.1538619756214186,
+    "sigma_multiplier": 3.0,
+    "source": "validation_normal",
+    "threshold": 0.6558288600725679
+  },
+  "dataset": {
+    "name": "Automotive OBD-II Dataset",
+    "split_sizes": {
+      "test": 3191,
+      "train": 17229,
+      "validation": 2653
+    },
+    "window_shape": [
+      60,
+      6
+    ]
+  },
+  "environment": {
+    "cuda_version": "not_available",
+    "device_name": "CPU",
+    "device_type": "cpu",
+    "git_commit": "8a54b39dadd73a858a3f3df987a0728de4e0d5ff",
+    "git_dirty": true,
+    "numpy_version": "2.5.3",
+    "platform": "linux",
+    "python_implementation": "CPython",
+    "python_version": "3.14.7",
+    "torch_version": "2.14.1+cpu"
+  },
+  "hyperparameters": {
+    "detection": {
+      "calibration_sigmas": 3.0,
+      "min_std": 1e-08,
+      "threshold_sigmas": 3.0,
+      "window_aggregation": "mean"
+    },
+    "loss": "MSELoss",
+    "training": {
+      "batch_size": 64,
+      "learning_rate": 0.001,
+      "max_epochs": 30,
+      "max_train_batches": 0,
+      "max_validation_batches": 0,
+      "min_delta": 0.0001,
+      "patience": 5,
+      "weight_decay": 0.0001
+    }
+  },
+  "model": "autoencoder",
+  "model_details": {
+    "architecture": "lstm_sequence_autoencoder",
+    "decoder_input": "repeated_latent",
+    "dropout": 0.0,
+    "hidden_size": 32,
+    "input_channels": 6,
+    "latent_dim": 16,
+    "num_layers": 1,
+    "window_samples": 60
+  },
+  "parameters": {
+    "total": 12246,
+    "trainable": 12246
+  },
+  "schema_version": 1,
+  "seed": 42,
+  "test": {
+    "anomaly_support": 638,
+    "auc_pr": 0.5660572174660377,
+    "f1": 0.3350253807106599,
+    "latency": {
+      "defined": true,
+      "detected": 489,
+      "mean_detected_samples": 6.380368098159509,
+      "median_detected_samples": 0.0,
+      "undetected": 149
+    },
+    "normal_support": 2553,
+    "per_fault": {
+      "drift": {
+        "anomaly_support": 128,
+        "auc_pr": 0.3981220373123006,
+        "f1": 0.37777777777777777,
+        "latency": {
+          "defined": true,
+          "detected": 109,
+          "mean_detected_samples": 6.605504587155964,
+          "median_detected_samples": 0.0,
+          "undetected": 19
+        },
+        "normal_support": 2553,
+        "precision": 0.6538461538461539,
+        "recall": 0.265625
+      },
+      "gain": {
+        "anomaly_support": 128,
+        "auc_pr": 0.7301185863423377,
+        "f1": 0.7359307359307359,
+        "latency": {
+          "defined": true,
+          "detected": 122,
+          "mean_detected_samples": 2.9098360655737703,
+          "median_detected_samples": 0.0,
+          "undetected": 6
+        },
+        "normal_support": 2553,
+        "precision": 0.8252427184466019,
+        "recall": 0.6640625
+      },
+      "gap": {
+        "anomaly_support": 127,
+        "auc_pr": 0.0456770258314905,
+        "f1": 0.0136986301369863,
+        "latency": {
+          "defined": true,
+          "detected": 60,
+          "mean_detected_samples": 17.7,
+          "median_detected_samples": 15.0,
+          "undetected": 67
+        },
+        "normal_support": 2553,
+        "precision": 0.05263157894736842,
+        "recall": 0.007874015748031496
+      },
+      "spike": {
+        "anomaly_support": 127,
+        "auc_pr": 0.3022165713491332,
+        "f1": 0.15286624203821655,
+        "latency": {
+          "defined": true,
+          "detected": 127,
+          "mean_detected_samples": 0.0,
+          "median_detected_samples": 0.0,
+          "undetected": 0
+        },
+        "normal_support": 2553,
+        "precision": 0.4,
+        "recall": 0.09448818897637795
+      },
+      "stuck": {
+        "anomaly_support": 128,
+        "auc_pr": 0.05255137403033499,
+        "f1": 0.0,
+        "latency": {
+          "defined": true,
+          "detected": 71,
+          "mean_detected_samples": 13.845070422535212,
+          "median_detected_samples": 11.0,
+          "undetected": 57
+        },
+        "normal_support": 2553,
+        "precision": 0.0,
+        "recall": 0.0
+      }
+    },
+    "precision": 0.88,
+    "recall": 0.20689655172413793,
+    "threshold": 0.6558288600725679
+  },
+  "training": {
+    "best_epoch": 30,
+    "best_validation_loss": 0.19424293326120912,
+    "elapsed_seconds": 189.5565379619993,
+    "epochs_ran": 30,
+    "history": [
+      {
+        "epoch": 1,
+        "train_loss": 0.548997143106941,
+        "validation_loss": 0.39214826995308505
+      },
+      {
+        "epoch": 2,
+        "train_loss": 0.39518986948617646,
+        "validation_loss": 0.35711749365709505
+      },
+      {
+        "epoch": 3,
+        "train_loss": 0.36309328750428876,
+        "validation_loss": 0.3330272314938366
+      },
+      {
+        "epoch": 4,
+        "train_loss": 0.33922117940229174,
+        "validation_loss": 0.31739551859094106
+      },
+      {
+        "epoch": 5,
+        "train_loss": 0.3230396588169433,
+        "validation_loss": 0.3050530232580398
+      },
+      {
+        "epoch": 6,
+        "train_loss": 0.3171080187221683,
+        "validation_loss": 0.2990926496621351
+      },
+      {
+        "epoch": 7,
+        "train_loss": 0.3016583676491523,
+        "validation_loss": 0.29372620552385
+      },
+      {
+        "epoch": 8,
+        "train_loss": 0.2930636280700344,
+        "validation_loss": 0.28288967841419826
+      },
+      {
+        "epoch": 9,
+        "train_loss": 0.27915027371769724,
+        "validation_loss": 0.2723144686427125
+      },
+      {
+        "epoch": 10,
+        "train_loss": 0.2729442466418613,
+        "validation_loss": 0.2711672599336991
+      },
+      {
+        "epoch": 11,
+        "train_loss": 0.2683585702964728,
+        "validation_loss": 0.25733802917007004
+      },
+      {
+        "epoch": 12,
+        "train_loss": 0.2565060846104944,
+        "validation_loss": 0.2521032246214168
+      },
+      {
+        "epoch": 13,
+        "train_loss": 0.24715086624957783,
+        "validation_loss": 0.24194095903106955
+      },
+      {
+        "epoch": 14,
+        "train_loss": 0.23984382778771127,
+        "validation_loss": 0.2406330043686998
+      },
+      {
+        "epoch": 15,
+        "train_loss": 0.23209049624248573,
+        "validation_loss": 0.24047642528420907
+      },
+      {
+        "epoch": 16,
+        "train_loss": 0.23093640362765275,
+        "validation_loss": 0.22911051070207025
+      },
+      {
+        "epoch": 17,
+        "train_loss": 0.22273787347807114,
+        "validation_loss": 0.22193211699773635
+      },
+      {
+        "epoch": 18,
+        "train_loss": 0.21909884658210046,
+        "validation_loss": 0.21983429051507317
+      },
+      {
+        "epoch": 19,
+        "train_loss": 0.2157324877612942,
+        "validation_loss": 0.21643802631755238
+      },
+      {
+        "epoch": 20,
+        "train_loss": 0.21697320117383212,
+        "validation_loss": 0.2161628634201031
+      },
+      {
+        "epoch": 21,
+        "train_loss": 0.21020163868116248,
+        "validation_loss": 0.2120230381046119
+      },
+      {
+        "epoch": 22,
+        "train_loss": 0.20858837722247847,
+        "validation_loss": 0.21105603887774155
+      },
+      {
+        "epoch": 23,
+        "train_loss": 0.20573620063228043,
+        "validation_loss": 0.2096942625062068
+      },
+      {
+        "epoch": 24,
+        "train_loss": 0.20486055081453455,
+        "validation_loss": 0.21952315475387915
+      },
+      {
+        "epoch": 25,
+        "train_loss": 0.20593640323274473,
+        "validation_loss": 0.2082736935224261
+      },
+      {
+        "epoch": 26,
+        "train_loss": 0.1991779650132581,
+        "validation_loss": 0.20107184667544023
+      },
+      {
+        "epoch": 27,
+        "train_loss": 0.1989279523819652,
+        "validation_loss": 0.20082071139481583
+      },
+      {
+        "epoch": 28,
+        "train_loss": 0.19768443191810509,
+        "validation_loss": 0.2009095760952404
+      },
+      {
+        "epoch": 29,
+        "train_loss": 0.1941623777761719,
+        "validation_loss": 0.19826591869466828
+      },
+      {
+        "epoch": 30,
+        "train_loss": 0.19410695467710537,
+        "validation_loss": 0.19424293326120912
+      }
+    ],
+    "method": "gradient_mse"
+  },
+  "validation": {
+    "anomaly_support": 531,
+    "auc_pr": 0.5760573988011115,
+    "f1": 0.3788546255506608,
+    "latency": {
+      "defined": true,
+      "detected": 424,
+      "mean_detected_samples": 6.212264150943396,
+      "median_detected_samples": 0.0,
+      "undetected": 107
+    },
+    "normal_support": 2122,
+    "per_fault": {
+      "drift": {
+        "anomaly_support": 106,
+        "auc_pr": 0.4219935190577917,
+        "f1": 0.3821656050955414,
+        "latency": {
+          "defined": true,
+          "detected": 96,
+          "mean_detected_samples": 5.135416666666667,
+          "median_detected_samples": 0.0,
+          "undetected": 10
+        },
+        "normal_support": 2122,
+        "precision": 0.5882352941176471,
+        "recall": 0.2830188679245283
+      },
+      "gain": {
+        "anomaly_support": 107,
+        "auc_pr": 0.7875009788044046,
+        "f1": 0.7326732673267327,
+        "latency": {
+          "defined": true,
+          "detected": 105,
+          "mean_detected_samples": 2.6857142857142855,
+          "median_detected_samples": 0.0,
+          "undetected": 2
+        },
+        "normal_support": 2122,
+        "precision": 0.7789473684210526,
+        "recall": 0.6915887850467289
+      },
+      "gap": {
+        "anomaly_support": 106,
+        "auc_pr": 0.053951246664244445,
+        "f1": 0.046153846153846156,
+        "latency": {
+          "defined": true,
+          "detected": 60,
+          "mean_detected_samples": 17.533333333333335,
+          "median_detected_samples": 14.0,
+          "undetected": 46
+        },
+        "normal_support": 2122,
+        "precision": 0.125,
+        "recall": 0.02830188679245283
+      },
+      "spike": {
+        "anomaly_support": 106,
+        "auc_pr": 0.3155041193470553,
+        "f1": 0.272108843537415,
+        "latency": {
+          "defined": true,
+          "detected": 106,
+          "mean_detected_samples": 0.0,
+          "median_detected_samples": 0.0,
+          "undetected": 0
+        },
+        "normal_support": 2122,
+        "precision": 0.4878048780487805,
+        "recall": 0.18867924528301888
+      },
+      "stuck": {
+        "anomaly_support": 106,
+        "auc_pr": 0.059620176298909526,
+        "f1": 0.031007751937984496,
+        "latency": {
+          "defined": true,
+          "detected": 57,
+          "mean_detected_samples": 14.157894736842104,
+          "median_detected_samples": 11.0,
+          "undetected": 49
+        },
+        "normal_support": 2122,
+        "precision": 0.08695652173913043,
+        "recall": 0.018867924528301886
+      }
+    },
+    "precision": 0.86,
+    "recall": 0.24293785310734464,
+    "threshold": 0.6558288600725679
+  },
+  "window_aggregation": "mean"
+}

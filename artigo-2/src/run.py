@@ -14,6 +14,8 @@ from typing import Any, Sequence
 import numpy as np
 
 from src.config import (
+    DETECTION_CONFIG,
+    DetectionConfig,
     DATA_CONFIG,
     MODEL_NAMES,
     TRAINING_CONFIG,
@@ -34,7 +36,9 @@ MODEL_MODULES = {
 }
 
 
-def _load_model(model_name: str) -> Detector:
+def _load_model(
+    model_name: str, detection_config: DetectionConfig = DETECTION_CONFIG
+) -> Detector:
     try:
         module_name = MODEL_MODULES[model_name]
     except KeyError as error:
@@ -50,7 +54,7 @@ def _load_model(model_name: str) -> Detector:
     build = getattr(module, "build", None)
     if not callable(build):
         raise RuntimeError(f"{module_name!r} deve expor uma função build().")
-    model = build()
+    model = build(detection_config)
     if not isinstance(model, Detector):
         raise TypeError(f"{module_name}.build() deve devolver um Detector.")
     return model
@@ -73,9 +77,10 @@ def _execute_pair(
     seed: int,
     dataset: Dataset,
     training_config: TrainingConfig,
+    detection_config: DetectionConfig = DETECTION_CONFIG,
 ) -> dict[str, Any]:
     rng = set_seed(seed)
-    model = _load_model(model_name)
+    model = _load_model(model_name, detection_config)
 
     train_X = apply_normalizer(dataset.train.X, dataset.mean, dataset.std)
     validation = _normalized_evaluation(
@@ -101,6 +106,7 @@ def _execute_pair(
         test,
         seed,
         training_config=training_config,
+        detection_config=detection_config,
     )
 
 
@@ -159,6 +165,7 @@ def run_experiments(
     resume: bool = False,
     overwrite: bool = False,
     quick: bool = False,
+    detection_config: DetectionConfig = DETECTION_CONFIG,
 ) -> list[Path]:
     """Executa a grade pedida e grava cada resultado assim que ele termina."""
 
@@ -201,6 +208,7 @@ def run_experiments(
                 seed,
                 dataset,
                 training_config,
+                detection_config,
             )
             _write_result_atomic(result, output_path)
             paths.append(output_path)
@@ -226,6 +234,16 @@ def _parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--resume", action="store_true")
     parser.add_argument("--overwrite", action="store_true")
     parser.add_argument("--quick", action="store_true")
+    parser.add_argument(
+        "--aggregation",
+        choices=("max", "mean"),
+        default=DETECTION_CONFIG.window_aggregation,
+        help=(
+            "Como o escore por amostra vira escore de janela. O máximo favorece "
+            "falha pontual; a média favorece falha sustentada. A escolha vale "
+            "igualmente para os três detectores."
+        ),
+    )
     return parser.parse_args(argv)
 
 
@@ -238,6 +256,9 @@ def main(argv: Sequence[str] | None = None) -> int:
         resume=args.resume,
         overwrite=args.overwrite,
         quick=args.quick,
+        detection_config=replace(
+            DETECTION_CONFIG, window_aggregation=args.aggregation
+        ),
     )
     return 0
 

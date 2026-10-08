@@ -208,6 +208,34 @@ Anotar aqui, com data, cada decisão fechada. Isso vira material da Metodologia.
   travado 0,0504 e lacuna 0,0460. Confirma o piso: o limiar resolve o pico e é
   inútil em travado, lacuna e deriva.
 
+- **08/10/2026 — grade canônica executada (#34), nas DUAS agregações.** 3 modelos
+  × 3 seeds × 2 agregações = 18 JSONs. O `run.py` ganhou `--aggregation` e passou a
+  gravar `window_aggregation` em cada JSON; sem isso as duas grades ficariam
+  indistinguíveis no disco. Local, em CPU; o autoencoder custa ~200 s por execução.
+
+  | Modelo | AUC-PR (máximo) | AUC-PR (média) |
+  | ------ | --------------: | -------------: |
+  | limiar | 0,5009 ± 0,0066 | 0,3814 ± 0,0102 |
+  | PCA | 0,4833 ± 0,0053 | 0,5067 ± 0,0094 |
+  | autoencoder | **0,5109 ± 0,0067** | **0,5634 ± 0,0172** |
+
+- **08/10/2026 — a agregação inverte o veredito.** Sob o máximo os três praticamente
+  empatam e a tabela é dominada pelo pico. Sob a média o autoencoder abre 48 % sobre
+  a linha de base. O máximo favorece falha pontual por construção; a média favorece
+  falha sustentada. Nenhuma das duas é "certa" — elas medem coisas diferentes, e
+  isso precisa estar na Discussão, não escondido atrás de uma escolha.
+- **08/10/2026 — onde o autoencoder realmente ganha:** deriva sob média, 0,3511
+  contra 0,0670 do PCA e 0,1268 do limiar. É a não linearidade e a memória temporal
+  aparecendo exatamente onde o plano previa.
+- **08/10/2026 — travado e lacuna ficam no nível do acaso nos três modelos e nas
+  duas agregações.** Provável causa: foram injetadas em `velocidade` e `fluxo_ar`,
+  canais que passam longos trechos constantes em operação normal. Um valor
+  congelado num canal que já costuma ficar congelado é indistinguível do normal.
+  Limitação a declarar.
+- **08/10/2026 — o autoencoder está subtreinado.** A melhor época foi 29, 28 e 30 de
+  um teto de 30; a parada antecipada nunca disparou e a perda de validação ainda
+  caía. Limitação a declarar; elevar o teto seria ajuste após ver o resultado.
+
 ## O que NÃO pode cair, por mais que aperte
 
 1. A linha de base 3σ — sem ela o resultado do autoencoder não significa nada.
