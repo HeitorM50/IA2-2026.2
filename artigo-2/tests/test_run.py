@@ -66,6 +66,22 @@ def test_baseline_percorre_pipeline_completo_em_dados_sinteticos() -> None:
     }
 
 
+def test_pca_percorre_pipeline_completo_e_registra_variancia() -> None:
+    result = _execute_pair(
+        "pca",
+        42,
+        _synthetic_dataset(),
+        TrainingConfig(),
+    )
+
+    assert result["model"] == "pca"
+    assert result["training"]["method"] == "closed_form"
+    assert result["parameters"] == {"total": 6_120, "trainable": 0}
+    assert result["model_details"]["latent_dim"] == 16
+    assert result["model_details"]["input_dim"] == 360
+    assert 0.0 < result["model_details"]["explained_variance_total"] < 1.0
+
+
 def test_grava_um_json_por_modelo_e_semente_de_forma_deterministica(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,

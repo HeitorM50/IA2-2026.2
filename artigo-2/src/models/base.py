@@ -14,6 +14,7 @@ número por janela.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from typing import Any
 
 import numpy as np
 
@@ -77,6 +78,12 @@ class Detector(ABC):
         """Marca como ajustado um detector treinado pelo loop MSE comum."""
 
         self._fitted = True
+
+    def model_details(self) -> dict[str, Any]:
+        """Metadados específicos do modelo que devem acompanhar o JSON."""
+
+        self._check_fitted()
+        return {}
 
     def predict(self, X: np.ndarray, threshold: float | None = None) -> np.ndarray:
         """Decisão binária por janela no limiar dado.

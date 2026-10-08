@@ -11,7 +11,7 @@ Antes de escrever qualquer coisa aqui, acionar a skill `experimento-pytorch`.
 | `faults.py` | as cinco injeções de falha em unidades físicas, mais `violates_range` (o `if` do firmware) e `build_evaluation_set` | **pronto** (#28) |
 | `models/base.py` | interface comum: `fit`, `score_samples`, `score_windows`, `predict`, `n_parameters` | **pronto** (#31) |
 | `models/baseline.py` | limiar 3σ por canal | **pronto** (#31) |
-| `models/pca.py` | PCA como autoencoder linear, erro de reconstrução | a criar |
+| `models/pca.py` | PCA como autoencoder linear, erro de reconstrução | **pronto** (#32) |
 | `models/autoencoder.py` | autoencoder LSTM sequência-a-sequência | a criar |
 | `train.py` | loop comum de treino (MSE de reconstrução) e calibração do limiar na validação normal | **pronto** (#30) |
 | `metrics.py` | AUC-PR, F1/precisão/revocação no limiar, latência de detecção, desagregação por classe de falha | **pronto** (#29) |

@@ -450,5 +450,6 @@ def train_eval(
             "total": int(total_parameters),
             "trainable": int(trainable_parameters),
         },
+        "model_details": model.model_details(),
         "environment": _environment_metadata(torch_metadata),
     }

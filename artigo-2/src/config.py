@@ -206,6 +206,23 @@ TRAINING_CONFIG = TrainingConfig()
 
 
 @dataclass(frozen=True)
+class RepresentationConfig:
+    """Bottleneck compartilhado pelo PCA e pelo autoencoder LSTM."""
+
+    latent_dim: int = 16
+
+    def __post_init__(self) -> None:
+        if self.latent_dim <= 0:
+            raise ValueError("A dimensão latente deve ser positiva.")
+
+    def as_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+
+REPRESENTATION_CONFIG = RepresentationConfig()
+
+
+@dataclass(frozen=True)
 class FaultConfig:
     """Parâmetros das cinco injeções de falha.
 
