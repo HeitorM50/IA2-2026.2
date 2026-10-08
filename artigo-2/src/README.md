@@ -16,7 +16,7 @@ Antes de escrever qualquer coisa aqui, acionar a skill `experimento-pytorch`.
 | `train.py` | loop comum de treino (MSE de reconstrução) e calibração do limiar na validação normal | **pronto** (#30) |
 | `metrics.py` | AUC-PR, F1/precisão/revocação no limiar, latência de detecção, desagregação por classe de falha | **pronto** (#29) |
 | `run.py` | orquestra modelo × seed e grava um JSON por execução em `results/` | **pronto** (#30) |
-| `report.py` | consolida os JSON em `resumo.csv`, gera a tabela LaTeX e a figura | adaptar de `artigo-1/src/report.py` |
+| `report.py` | consolida os JSON em `resumo.csv`, emite as macros LaTeX e a figura de duas agregações | **pronto** (#35) |
 
 ## Ambiente
 

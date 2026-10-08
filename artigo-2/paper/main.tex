@@ -24,9 +24,11 @@
 \usepackage{url}
 
 \graphicspath{{figs/}}
-% Gerado por src/report.py a partir dos JSON de src/results/.
-% Enquanto não existir, mantenha o \input comentado para o artigo compilar.
-% \input{results-generated.tex}
+\usepackage{multirow}
+
+% Gerado por src/report.py a partir dos JSON de src/results/ e results-mean/.
+% NÃO editar à mão: todo número do artigo sai daqui.
+\input{results-generated.tex}
 
 \begin{document}
 
@@ -176,8 +178,22 @@ Os resultados foram obtidos com três sementes, e são reportados como média e 
 %==============================================================================
 \section{Resultados}
 %==============================================================================
-% Orçamento: ~0,8 página. Uma tabela principal e uma figura que responda a uma
-% pergunta. Os números vêm de src/results/ via report.py — nunca digitados.
+% Orçamento: ~0,8 página. Os números vêm de src/results/ via report.py.
+% NENHUM valor pode ser digitado aqui: cite a macro.
+
+\ResultTable
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\columnwidth]{auc-pr-por-classe.pdf}
+\caption{AUC-PR por classe de falha sob as duas regras de agregação. A ordenação
+entre os detectores se inverte conforme a regra: o máximo privilegia a falha
+pontual e a média, a sustentada.}
+\label{fig:auc-por-classe}
+\end{figure}
+
+% A TEXTO (#38): comentar o que a Tabela~\ref{tab:resultados} e a
+% Figura~\ref{fig:auc-por-classe} NÃO mostram, sem recitar números.
 
 %==============================================================================
 \section{Discussão e Limitações}

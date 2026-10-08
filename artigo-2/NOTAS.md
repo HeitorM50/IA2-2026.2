@@ -236,6 +236,22 @@ Anotar aqui, com data, cada decisão fechada. Isso vira material da Metodologia.
   um teto de 30; a parada antecipada nunca disparou e a perda de validação ainda
   caía. Limitação a declarar; elevar o teto seria ajuste após ver o resultado.
 
+- **08/10/2026 — relatório implementado (#35).** `report.py` lê as duas grades,
+  grava `resumo.csv`, emite `paper/results-generated.tex` com todas as macros e
+  gera a figura de AUC-PR por classe com um painel por agregação. O `main.tex`
+  passou a importar as macros e a inserir a tabela por `\ResultTable`; nenhum
+  número está digitado no texto. Artigo em **3 páginas**, zero citação indefinida,
+  zero estouro de margem.
+- **08/10/2026 — coluna de custo usa `parameters.total`, não `trainable`.** O
+  limiar e o PCA são ajustados em forma fechada e têm zero parâmetros treinados por
+  gradiente, mas carregam 12 e 6.120 valores aprendidos. `trainable` os faria
+  aparecer como gratuitos na tabela, o que é falso.
+- **08/10/2026 — pendência de procedência:** os 18 JSONs foram gravados com
+  `git_dirty: true`, porque o `run.py` ainda tinha alterações não commitadas quando
+  a grade rodou. O commit registrado (`8a54b39`) não descreve exatamente o código
+  executado. Reexecutar com a árvore limpa custa ~25 min e deixa a procedência
+  defensável.
+
 ## O que NÃO pode cair, por mais que aperte
 
 1. A linha de base 3σ — sem ela o resultado do autoencoder não significa nada.
