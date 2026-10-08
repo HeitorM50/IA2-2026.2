@@ -3,20 +3,20 @@
 %
 % A preencher conforme a escrita avança. Entradas obrigatórias:
 %   [x] o dataset usado, com DOI  -> weber2023automotive
-%   [ ] Goodfellow, Bengio e Courville (2016) para autoencoder
-%   [ ] Hochreiter e Schmidhuber (1997) para LSTM
-%   [ ] Saito e Rehmsmeier (2015) para a justificativa de AUC-PR
-%   [ ] 3 a 5 trabalhos de detecção de anomalia em série temporal
-%   [ ] 2 a 3 trabalhos de telemetria veicular / barramento CAN
+%   [x] Goodfellow, Bengio e Courville (2016) para autoencoder
+%   [x] Hochreiter e Schmidhuber (1997) para LSTM
+%   [x] Saito e Rehmsmeier (2015) para a justificativa de AUC-PR
+%   [x] 3 a 5 trabalhos de detecção de anomalia em série temporal
+%   [x] 2 a 3 trabalhos de telemetria veicular / barramento CAN
 
 @misc{weber2023automotive,
   author       = {Marc Weber},
   title        = {Automotive {OBD-II} Dataset},
   year         = {2023},
-  publisher    = {Karlsruhe Institute of Technology},
+  howpublished = {Karlsruhe Institute of Technology},
   doi          = {10.35097/1130},
-  howpublished = {\url{https://doi.org/10.35097/1130}},
-  note         = {Licença CC BY 4.0}
+  url          = {https://doi.org/10.35097/1130},
+  note         = {Dataset sob licença CC BY 4.0}
 }
 
 @book{goodfellow2016deep,
@@ -46,4 +46,90 @@
   number  = {3},
   pages   = {e0118432},
   year    = {2015}
+}
+
+@article{isermann2005model,
+  author  = {Rolf Isermann},
+  title   = {Model-Based Fault-Detection and Diagnosis---Status and Applications},
+  journal = {Annual Reviews in Control},
+  volume  = {29},
+  number  = {1},
+  pages   = {71--85},
+  year    = {2005},
+  doi     = {10.1016/j.arcontrol.2004.12.002}
+}
+
+@article{chandola2009anomaly,
+  author  = {Varun Chandola and Arindam Banerjee and Vipin Kumar},
+  title   = {Anomaly Detection: A Survey},
+  journal = {ACM Computing Surveys},
+  volume  = {41},
+  number  = {3},
+  pages   = {1--58},
+  year    = {2009},
+  doi     = {10.1145/1541880.1541882}
+}
+
+@inproceedings{lakhina2004diagnosing,
+  author    = {Anukool Lakhina and Mark Crovella and Christophe Diot},
+  title     = {Diagnosing Network-Wide Traffic Anomalies},
+  booktitle = {Proceedings of ACM SIGCOMM 2004},
+  pages     = {219--230},
+  year      = {2004},
+  doi       = {10.1145/1030194.1015492}
+}
+
+@article{malhotra2016lstm,
+  author  = {Pankaj Malhotra and Anusha Ramakrishnan and Gaurangi Anand and Lovekesh Vig and Puneet Agarwal and Gautam Shroff},
+  title   = {{LSTM}-Based Encoder-Decoder for Multi-Sensor Anomaly Detection},
+  journal = {arXiv preprint arXiv:1607.00148},
+  year    = {2016},
+  doi     = {10.48550/arXiv.1607.00148}
+}
+
+@inproceedings{audibert2020usad,
+  author    = {Julien Audibert and Pietro Michiardi and Fr{\'{e}}d{\'{e}}ric Guyard and S{\'{e}}bastien Marti and Maria A. Zuluaga},
+  title     = {{USAD}: UnSupervised Anomaly Detection on Multivariate Time Series},
+  booktitle = {Proceedings of the 26th ACM SIGKDD International Conference on Knowledge Discovery and Data Mining},
+  pages     = {3395--3404},
+  year      = {2020},
+  doi       = {10.1145/3394486.3403392}
+}
+
+@inproceedings{su2019robust,
+  author    = {Ya Su and Youjian Zhao and Chenhao Niu and Rong Liu and Wei Sun and Dan Pei},
+  title     = {Robust Anomaly Detection for Multivariate Time Series Through Stochastic Recurrent Neural Network},
+  booktitle = {Proceedings of the 25th ACM SIGKDD International Conference on Knowledge Discovery and Data Mining},
+  pages     = {2828--2837},
+  year      = {2019},
+  doi       = {10.1145/3292500.3330672}
+}
+
+@inproceedings{taylor2016automobile,
+  author    = {Adrian Taylor and Sylvain Leblanc and Nathalie Japkowicz},
+  title     = {Anomaly Detection in Automobile Control Network Data with Long Short-Term Memory Networks},
+  booktitle = {2016 IEEE International Conference on Data Science and Advanced Analytics},
+  pages     = {130--139},
+  year      = {2016},
+  doi       = {10.1109/DSAA.2016.20}
+}
+
+@article{kang2016intrusion,
+  author  = {Min-Joo Kang and Je-Won Kang},
+  title   = {Intrusion Detection System Using Deep Neural Network for In-Vehicle Network Security},
+  journal = {PLOS ONE},
+  volume  = {11},
+  number  = {6},
+  pages   = {e0155781},
+  year    = {2016},
+  doi     = {10.1371/journal.pone.0155781}
+}
+
+@misc{evangelista2026sensorfaults,
+  author       = {Gustavo Xavier Evangelista and Heitor Mac{\^{e}}do Ricardo},
+  title        = {Injeção de Falhas de Sensor em Telemetria Veicular},
+  year         = {2026},
+  howpublished = {Repositório de código},
+  url          = {https://github.com/HeitorM50/IA2-2026.2},
+  note         = {Commit d0aa1cc}
 }

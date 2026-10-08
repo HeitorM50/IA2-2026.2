@@ -65,22 +65,39 @@ Matrícula: 241039073 \\
 %==============================================================================
 \section{Introdução}
 %==============================================================================
-% Orçamento: ~0,6 página.
-% Deve conter, nesta ordem:
-%   1. Contexto: telemetria veicular embarcada e por que falha de sensor importa.
-%   2. Lacuna: validação por faixa não detecta falha que permanece dentro da faixa.
-%   3. Pergunta de pesquisa, explícita e em uma frase.
-%   4. Frase de contribuição começando por "Este trabalho".
+
+A telemetria veicular embarcada consiste na aquisição e no registro contínuos de variáveis do veículo, como rotação, velocidade, temperaturas, pressões e atuação do acelerador \cite{weber2023automotive,kang2016intrusion}.
+Essas variáveis podem ser obtidas pelo sistema de diagnóstico de bordo de segunda geração (On-Board Diagnostics II, OBD-II) ou circular entre unidades de controle eletrônico (Electronic Control Units, ECUs) pela rede de área de controladores (Controller Area Network, CAN) \cite{weber2023automotive,kang2016intrusion}.
+Como os sinais descrevem o estado físico usado para supervisão e controle, falhas de sensor podem comprometer tanto a confiabilidade do histórico quanto decisões de manutenção e segurança \cite{isermann2005model,kang2016intrusion}.
+
+Uma salvaguarda elementar consiste em aceitar cada leitura somente quando ela pertence a uma faixa física predefinida, procedimento de baixo custo associado à verificação clássica de limites \cite{isermann2005model}.
+Essa regra detecta valores impossíveis, mas não identifica uma falha cuja saída permaneça plausível enquanto perde a relação com os demais sinais \cite{isermann2005model,chandola2009anomaly}.
+Considere-se uma falha de ganho, isto é, uma calibração multiplicativa incorreta: se o programa embarcado (firmware) trocar a constante \texttt{RPM\_ESCALA} de 0,25 para 0,125, a interface de programação de aplicações (API) passa a registrar o dobro das rotações por minuto (RPM) reais \cite{evangelista2026sensorfaults}.
+Nesse cenário, 3.000 RPM reais tornam-se 6.000 RPM registrados, valor que continua válido e, portanto, atravessa a verificação de faixa sem alerta \cite{evangelista2026sensorfaults}.
+Surge, assim, a lacuna entre validar cada canal isoladamente e detectar incoerências temporais e multivariadas, isto é, entre múltiplos canais, dentro do domínio admissível \cite{chandola2009anomaly,malhotra2016lstm}.
+
+Em telemetria veicular multivariada de baixa taxa, quanto um autoencoder recorrente treinado apenas em operação normal supera detectores estatísticos e lineares na identificação de falhas de sensor injetadas, e a que custo computacional?
+
+Este trabalho compara um limiar de três desvios-padrão ($3\sigma$), a análise de componentes principais (Principal Component Analysis, PCA) e um autoencoder recorrente, rede neural treinada para reconstruir suas entradas e implementada com memória de longo e curto prazo (Long Short-Term Memory, LSTM), sob o mesmo protocolo de falhas injetadas em telemetria OBD-II e com avaliação de desempenho e custo computacional \cite{lakhina2004diagnosing,malhotra2016lstm,weber2023automotive}.
 
 %==============================================================================
 \section{Trabalhos Relacionados}
 %==============================================================================
-% Orçamento: ~0,5 página. De 5 a 8 trabalhos AGRUPADOS POR ABORDAGEM,
-% fechando com o parágrafo do diferencial deste artigo.
-% Grupos sugeridos:
-%   - detecção de anomalia por limiar e métodos estatísticos;
-%   - autoencoders para detecção de anomalia em série temporal;
-%   - trabalhos específicos de telemetria veicular e barramento CAN.
+
+Entre as abordagens por limiar e métodos estatísticos, Chandola, Banerjee e Kumar organizam detectores segundo as hipóteses usadas para separar o comportamento normal do anômalo, mostrando que regras simples dependem de uma definição adequada de normalidade \cite{chandola2009anomaly}.
+Para dados multivariados, Lakhina, Crovella e Diot empregam PCA para decompor medições em subespaços normal e anômalo, de modo que o resíduo em relação à estrutura linear aprendida produza uma medida de desvio denominada escore de anomalia \cite{lakhina2004diagnosing}.
+Essas estratégias oferecem referências interpretáveis e de baixo custo, porém uma faixa por canal ignora dependências entre sinais e a PCA se restringe a relações lineares \cite{chandola2009anomaly,lakhina2004diagnosing}.
+
+Nos métodos baseados em reconstrução de séries temporais, Malhotra et al. propõem um codificador-decodificador LSTM treinado em sequências normais e usam o erro de reconstrução para sinalizar observações incompatíveis com o padrão aprendido \cite{malhotra2016lstm}.
+O método de detecção não supervisionada de anomalias (UnSupervised Anomaly Detection, USAD) combina dois autoencoders que se refinam competitivamente para detectar anomalias em séries temporais multivariadas com baixa sobrecarga de inferência \cite{audibert2020usad}.
+Já o OmniAnomaly combina recorrência com uma representação probabilística interna para modelar dependências temporais e incerteza em sinais multivariados \cite{su2019robust}.
+Em conjunto, esses trabalhos motivam modelos não supervisionados capazes de aprender relações não lineares sem exigir exemplos rotulados de cada falha \cite{malhotra2016lstm,audibert2020usad,su2019robust}.
+
+No domínio veicular, Taylor, Leblanc e Japkowicz treinam uma LSTM para prever a próxima palavra de dados no CAN e sinalizar ataques sintéticos pela improbabilidade dos bits observados \cite{taylor2016automobile}.
+Kang e Kang classificam pacotes CAN normais e maliciosos com uma rede neural profunda treinada sobre atributos probabilísticos, abordagem supervisionada na qual exemplos das duas classes são fornecidos durante o ajuste \cite{kang2016intrusion}.
+Em outra frente, o Automotive OBD-II Dataset disponibiliza dez sinais físicos coletados em condução real, mas não fornece um catálogo rotulado de falhas de sensores para treinamento supervisionado \cite{weber2023automotive}.
+
+O diferencial deste artigo está em avaliar falhas de sensor, e não ataques ao tráfego CAN, mediante a comparação controlada de um limiar, um modelo linear e um autoencoder recorrente sobre a mesma telemetria OBD-II de baixa taxa, incluindo a falha de ganho que permanece dentro da faixa válida e registrando também o custo computacional \cite{chandola2009anomaly,lakhina2004diagnosing,malhotra2016lstm,taylor2016automobile,kang2016intrusion,weber2023automotive}.
 
 %==============================================================================
 \section{Metodologia}
@@ -183,6 +200,9 @@ Os resultados foram obtidos com três sementes, e são reportados como média e 
 
 \ResultTable
 
+Na Tabela~\ref{tab:resultados}, a AUC-PR do autoencoder com a média foi \ResultAutoencoderAucPrMean{}, contra \ResultLimiarAucPrMean{} do limiar, enquanto com o máximo as respectivas AUC-PR foram \ResultAutoencoderAucPrMax{} e \ResultLimiarAucPrMax{}, sem separação comparável.
+O ganho obtido pelo autoencoder sob a média veio com o maior custo de representação: \ResultAutoencoderParamsMean{} parâmetros aprendidos, ante \ResultPcaParamsMean{} do PCA e \ResultLimiarParamsMean{} do limiar.
+
 \begin{figure}[htbp]
 \centering
 \includegraphics[width=\columnwidth]{auc-pr-por-classe.pdf}
@@ -191,8 +211,12 @@ A ordenação entre os detectores se inverte conforme a regra: o máximo privile
 \label{fig:auc-por-classe}
 \end{figure}
 
-% A TEXTO (#38): comentar o que a Tabela~\ref{tab:resultados} e a
-% Figura~\ref{fig:auc-por-classe} NÃO mostram, sem recitar números.
+A decomposição da Figura~\ref{fig:auc-por-classe} mostra que a hipótese de vitória do limiar nos picos não se confirmou: sua AUC-PR de pico foi \ResultLimiarPicoMax{}, abaixo das AUC-PR de \ResultAutoencoderPicoMax{} do autoencoder e \ResultPcaPicoMax{} do PCA.
+Sob o máximo, o limiar também obteve a maior AUC-PR de deriva, \ResultLimiarDerivaMax{}, contra \ResultAutoencoderDerivaMax{} do autoencoder e \ResultPcaDerivaMax{} do PCA, resultado oposto à previsão inicial.
+
+Com a média, porém, surgiu a desvantagem esperada nas falhas sustentadas: no ganho, a AUC-PR do limiar foi \ResultLimiarGanhoMean{}, enquanto PCA e autoencoder alcançaram, respectivamente, \ResultPcaGanhoMean{} e \ResultAutoencoderGanhoMean{}.
+Na deriva, a AUC-PR do autoencoder chegou a \ResultAutoencoderDerivaMean{}, acima das AUC-PR de \ResultLimiarDerivaMean{} do limiar e \ResultPcaDerivaMean{} do PCA.
+Assim, o achado central não é a superioridade universal de um detector, mas a interação entre classe de falha e agregação: o máximo enfatiza desvios pontuais, enquanto a média acumula alterações persistentes.
 
 %==============================================================================
 \section{Discussão e Limitações}
