@@ -154,9 +154,10 @@ O \emph{autoencoder recorrente} comprime a janela por uma rede de memória de lo
 Por processar a janela como sequência, dispõe da dependência temporal que os dois primeiros ignoram.
 A dimensão latente é idêntica à do PCA, de modo que a diferença observada entre ambos seja atribuível à não linearidade e à memória, e não à capacidade de compressão.
 
-% PENDENTE (#32, #33): fixar e registrar aqui a dimensão latente, a arquitetura
-% exata do LSTM, o otimizador, a taxa de aprendizado, o tamanho do lote e o
-% critério de parada antecipada. Sem isso a seção não é reproduzível.
+No PCA e no autoencoder, a dimensão latente foi fixada em 16.
+O codificador recorrente possui uma camada LSTM com 32 unidades seguida de projeção linear para o gargalo, enquanto o decodificador recebe esse vetor repetido pelos 60 instantes, emprega outra camada LSTM com 32 unidades e projeta a saída para os seis canais.
+O ajuste minimizou o erro quadrático médio com AdamW, taxa de aprendizado de $10^{-3}$, decaimento de pesos de $10^{-4}$ e lotes de 64 janelas, por no máximo 30 épocas.
+O treinamento foi interrompido após cinco épocas sem redução mínima de $10^{-4}$ na perda da validação normal, restaurando-se os parâmetros da melhor época.
 
 \subsection{Calibração e métricas}
 

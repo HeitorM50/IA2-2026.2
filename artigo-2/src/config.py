@@ -154,6 +154,103 @@ DATA_CONFIG = DataConfig()
 
 
 @dataclass(frozen=True)
+class TrainingConfig:
+    """Hiperparâmetros do ajuste do autoencoder recorrente.
+
+    Os detectores estatístico e PCA possuem ajuste fechado e ignoram estes
+    valores, mas atravessam o mesmo ``train_eval`` para calibração e avaliação.
+    """
+
+    batch_size: int = 64
+    learning_rate: float = 1e-3
+    weight_decay: float = 1e-4
+    max_epochs: int = 30
+    patience: int = 5
+    min_delta: float = 1e-4
+    max_train_batches: int = 0
+    max_validation_batches: int = 0
+
+    def __post_init__(self) -> None:
+        if self.batch_size <= 0:
+            raise ValueError("O tamanho do lote deve ser positivo.")
+        if self.learning_rate <= 0:
+            raise ValueError("A taxa de aprendizado deve ser positiva.")
+        if self.weight_decay < 0:
+            raise ValueError("O weight decay não pode ser negativo.")
+        if self.max_epochs <= 0 or self.patience <= 0:
+            raise ValueError("Épocas e paciência devem ser positivas.")
+        if self.min_delta < 0:
+            raise ValueError("A melhora mínima não pode ser negativa.")
+        if self.max_train_batches < 0 or self.max_validation_batches < 0:
+            raise ValueError("Limites de lotes não podem ser negativos.")
+
+    def as_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+    def for_quick_run(self) -> "TrainingConfig":
+        """Mantém o protocolo, reduzindo apenas o trabalho para smoke tests."""
+
+        return TrainingConfig(
+            batch_size=self.batch_size,
+            learning_rate=self.learning_rate,
+            weight_decay=self.weight_decay,
+            max_epochs=2,
+            patience=1,
+            min_delta=self.min_delta,
+            max_train_batches=10,
+            max_validation_batches=5,
+        )
+
+
+TRAINING_CONFIG = TrainingConfig()
+
+
+@dataclass(frozen=True)
+class RepresentationConfig:
+    """Bottleneck compartilhado pelo PCA e pelo autoencoder LSTM."""
+
+    latent_dim: int = 16
+
+    def __post_init__(self) -> None:
+        if self.latent_dim <= 0:
+            raise ValueError("A dimensão latente deve ser positiva.")
+
+    def as_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+
+REPRESENTATION_CONFIG = RepresentationConfig()
+
+
+@dataclass(frozen=True)
+class AutoencoderConfig:
+    """Arquitetura do autoencoder LSTM e lote usado na inferência."""
+
+    hidden_size: int = 32
+    num_layers: int = 1
+    dropout: float = 0.0
+    score_batch_size: int = 256
+
+    def __post_init__(self) -> None:
+        if self.hidden_size <= 0:
+            raise ValueError("O número de unidades LSTM deve ser positivo.")
+        if self.num_layers <= 0:
+            raise ValueError("O número de camadas LSTM deve ser positivo.")
+        if not 0.0 <= self.dropout < 1.0:
+            raise ValueError("O dropout deve ficar no intervalo [0, 1).")
+        if self.num_layers == 1 and self.dropout != 0.0:
+            raise ValueError("Uma única camada LSTM exige dropout igual a zero.")
+        if self.score_batch_size <= 0:
+            raise ValueError("O lote de inferência deve ser positivo.")
+
+    def as_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+
+AUTOENCODER_CONFIG = AutoencoderConfig()
+
+
+@dataclass(frozen=True)
 class FaultConfig:
     """Parâmetros das cinco injeções de falha.
 
@@ -288,6 +385,11 @@ class DetectionConfig:
     # normal (#30) —, mas é a regra que dá nome ao modelo.
     threshold_sigmas: float = 3.0
 
+    # Multiplicador da dispersão dos escores normais de validação. É separado
+    # dos 3σ nominais da baseline: a calibração usa μ + λσ sobre o escore de
+    # janela de cada detector, qualquer que seja a unidade desse escore.
+    calibration_sigmas: float = 3.0
+
     # Piso para o desvio por canal, evitando divisão por zero em canal constante.
     min_std: float = 1e-8
 
@@ -296,6 +398,8 @@ class DetectionConfig:
             raise ValueError("Agregação deve ser 'max' ou 'mean'.")
         if self.threshold_sigmas <= 0:
             raise ValueError("O limiar em desvios deve ser positivo.")
+        if self.calibration_sigmas <= 0:
+            raise ValueError("O multiplicador da calibração deve ser positivo.")
         if self.min_std <= 0:
             raise ValueError("O piso do desvio deve ser positivo.")
 

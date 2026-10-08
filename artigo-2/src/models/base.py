@@ -14,6 +14,7 @@ número por janela.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from typing import Any
 
 import numpy as np
 
@@ -24,6 +25,7 @@ class Detector(ABC):
     """Contrato comum. O escore é sempre "quanto isto destoa do normal"."""
 
     name: str = "detector"
+    fit_mode: str = "closed_form"
 
     def __init__(self, cfg: DetectionConfig = DETECTION_CONFIG) -> None:
         self.cfg = cfg
@@ -55,10 +57,33 @@ class Detector(ABC):
         A agregação vem do `DetectionConfig` e é idêntica para os três modelos.
         """
 
-        por_amostra = self.score_samples(X)
+        return self.aggregate_scores(self.score_samples(X))
+
+    def aggregate_scores(self, sample_scores: np.ndarray) -> np.ndarray:
+        """Agrega escores já calculados sem consultar o conjunto novamente."""
+
+        por_amostra = np.asarray(sample_scores, dtype=np.float64)
+        if por_amostra.ndim != 2 or por_amostra.shape[1] == 0:
+            raise ValueError(
+                "Esperados escores com formato (janelas, amostras); "
+                f"recebido {por_amostra.shape}."
+            )
+        if not np.isfinite(por_amostra).all():
+            raise ValueError("Os escores por amostra devem ser finitos.")
         if self.cfg.window_aggregation == "max":
             return por_amostra.max(axis=1)
         return por_amostra.mean(axis=1)
+
+    def _mark_fitted(self) -> None:
+        """Marca como ajustado um detector treinado pelo loop MSE comum."""
+
+        self._fitted = True
+
+    def model_details(self) -> dict[str, Any]:
+        """Metadados específicos do modelo que devem acompanhar o JSON."""
+
+        self._check_fitted()
+        return {}
 
     def predict(self, X: np.ndarray, threshold: float | None = None) -> np.ndarray:
         """Decisão binária por janela no limiar dado.

@@ -60,7 +60,7 @@ há tempo para escrever só depois que os resultados saírem.
 - [x] **Conjunto de dados** — Automotive OBD-II (KIT), DOI `10.35097/1130`,
       CC BY 4.0, 11,6 MB. **Verificado em 06/10**: 81 sessões, 70 h, 10 canais.
       Aprovado, com reamostragem obrigatória para 1 Hz (ver `PLANO-EXPERIMENTAL.md`).
-- [ ] **Modelos** — limiar 3σ, PCA e autoencoder LSTM.
+- [x] **Modelos** — limiar 3σ, PCA e autoencoder LSTM.
 - [x] **Métrica principal** — AUC-PR, pelo desbalanceamento extremo entre janelas
       normais e anômalas. Secundárias: F1 no limiar calibrado, precisão, revocação
       e **latência de detecção**.
@@ -182,12 +182,14 @@ Anotar aqui, com data, cada decisão fechada. Isso vira material da Metodologia.
   compilado, dentro do orçamento de 1,0. O `\nocite{*}` temporário do esqueleto foi
   removido, já que existem citações reais; o conjunto de dados entrou no `refs.bib`
   como `weber2023automotive`, com DOI.
-- **07/10/2026 — pendência na Metodologia:** a subseção de modelos descreve o
-  protocolo, mas a dimensão latente, a arquitetura do LSTM, o otimizador, a taxa de
-  aprendizado, o tamanho do lote e o critério de parada **ainda não existem** — eles
-  são fixados nas #32 e #33. Há um comentário `% PENDENTE` no `main.tex` marcando o
-  ponto exato. Sem esses números a seção não é reproduzível, que é o critério de
-  correção nº 2.
+- **07/10/2026 — arquitetura dos modelos fechada (#32, #33):** PCA e autoencoder
+  usam dimensão latente 16. O autoencoder tem codificador LSTM de uma camada com
+  32 unidades, projeção linear para o gargalo, repetição do latente por 60 passos,
+  decodificador LSTM de uma camada com 32 unidades e projeção linear para os seis
+  canais, totalizando 12.246 parâmetros. O ajuste usa MSE, AdamW com taxa de
+  aprendizado `1e-3`, decaimento de pesos `1e-4` e lotes de 64 janelas, por até
+  30 épocas. A parada ocorre após cinco épocas sem redução mínima de `1e-4` na
+  perda da validação normal, restaurando-se os pesos da melhor época.
 - **07/10/2026 — orçamento por palavras não serve.** A estimativa de ~1000 palavras
   por página estava errada: o IEEE em duas colunas comporta cerca de 1240. Medir o
   espaço no PDF compilado, não contar palavras.
