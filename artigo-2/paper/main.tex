@@ -200,6 +200,9 @@ Os resultados foram obtidos com três sementes, e são reportados como média e 
 
 \ResultTable
 
+Na Tabela~\ref{tab:resultados}, a AUC-PR do autoencoder com a média foi \ResultAutoencoderAucPrMean{}, contra \ResultLimiarAucPrMean{} do limiar, enquanto com o máximo as respectivas AUC-PR foram \ResultAutoencoderAucPrMax{} e \ResultLimiarAucPrMax{}, sem separação comparável.
+O ganho obtido pelo autoencoder sob a média veio com o maior custo de representação: \ResultAutoencoderParamsMean{} parâmetros aprendidos, ante \ResultPcaParamsMean{} do PCA e \ResultLimiarParamsMean{} do limiar.
+
 \begin{figure}[htbp]
 \centering
 \includegraphics[width=\columnwidth]{auc-pr-por-classe.pdf}
@@ -208,8 +211,12 @@ A ordenação entre os detectores se inverte conforme a regra: o máximo privile
 \label{fig:auc-por-classe}
 \end{figure}
 
-% A TEXTO (#38): comentar o que a Tabela~\ref{tab:resultados} e a
-% Figura~\ref{fig:auc-por-classe} NÃO mostram, sem recitar números.
+A decomposição da Figura~\ref{fig:auc-por-classe} mostra que a hipótese de vitória do limiar nos picos não se confirmou: sua AUC-PR de pico foi \ResultLimiarPicoMax{}, abaixo das AUC-PR de \ResultAutoencoderPicoMax{} do autoencoder e \ResultPcaPicoMax{} do PCA.
+Sob o máximo, o limiar também obteve a maior AUC-PR de deriva, \ResultLimiarDerivaMax{}, contra \ResultAutoencoderDerivaMax{} do autoencoder e \ResultPcaDerivaMax{} do PCA, resultado oposto à previsão inicial.
+
+Com a média, porém, surgiu a desvantagem esperada nas falhas sustentadas: no ganho, a AUC-PR do limiar foi \ResultLimiarGanhoMean{}, enquanto PCA e autoencoder alcançaram, respectivamente, \ResultPcaGanhoMean{} e \ResultAutoencoderGanhoMean{}.
+Na deriva, a AUC-PR do autoencoder chegou a \ResultAutoencoderDerivaMean{}, acima das AUC-PR de \ResultLimiarDerivaMean{} do limiar e \ResultPcaDerivaMean{} do PCA.
+Assim, o achado central não é a superioridade universal de um detector, mas a interação entre classe de falha e agregação: o máximo enfatiza desvios pontuais, enquanto a média acumula alterações persistentes.
 
 %==============================================================================
 \section{Discussão e Limitações}
