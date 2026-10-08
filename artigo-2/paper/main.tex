@@ -76,7 +76,7 @@ Como os sinais descrevem o estado físico usado para supervisão e controle, fal
 Uma salvaguarda elementar consiste em aceitar cada leitura somente quando ela pertence a uma faixa física predefinida, procedimento de baixo custo associado à verificação clássica de limites \cite{isermann2005model}.
 Essa regra detecta valores impossíveis, mas não identifica uma falha cuja saída permaneça plausível enquanto perde a relação com os demais sinais \cite{isermann2005model,chandola2009anomaly}.
 Considere-se uma falha de ganho, isto é, uma calibração multiplicativa incorreta: se o programa embarcado (firmware) trocar a constante \texttt{RPM\_ESCALA} de 0,25 para 0,125, a interface de programação de aplicações (API) passa a registrar o dobro das rotações por minuto (RPM) reais \cite{evangelista2026sensorfaults}.
-Nesse cenário, 3.000 RPM reais tornam-se 6.000 RPM registrados, valor que continua válido e, portanto, atravessa a verificação de faixa sem alerta \cite{evangelista2026sensorfaults}.
+Nesse cenário, 3.000 RPM reais tornam-se 6.000 RPM registrados, valor que continua válido e, portanto, atravessa a verificação de faixa sem alerta.
 Surge, assim, a lacuna entre validar cada canal isoladamente e detectar incoerências temporais e multivariadas, isto é, entre múltiplos canais, dentro do domínio admissível \cite{chandola2009anomaly,malhotra2016lstm}.
 
 Em telemetria veicular multivariada de baixa taxa, quanto um autoencoder recorrente treinado apenas em operação normal supera detectores estatísticos e lineares na identificação de falhas de sensor injetadas, e a que custo computacional?
@@ -132,7 +132,7 @@ O procedimento produziu 85 segmentos contínuos e 23\,073 janelas, cada uma um t
 
 
 A divisão em treino, validação e teste foi feita \emph{por sessão}, nunca por janela: janelas vizinhas compartilham 50 das 60 amostras, e um sorteio por janela colocaria trechos quase idênticos nos dois lados da avaliação.
-O sorteio das sessões usa semente própria e fixa, independente das sementes de treinamento, para que a variação entre execuções meça variação de treinamento e não troca das sessões avaliadas.
+O sorteio das sessões usa semente própria e fixa (20261009), independente das sementes de treinamento, para que a variação entre execuções meça variação de treinamento e não troca das sessões avaliadas.
 
 A divisão resultou em 17\,229 janelas de treino (54 sessões), 2\,653 de validação (12 sessões) e 3\,191 de teste (11 sessões); as proporções afastam-se das frações nominais porque as sessões têm durações distintas, entre 12,2 e 134,7 minutos.
 A média e o desvio padrão de cada canal foram calculados exclusivamente sobre o treino e aplicados aos três conjuntos, evitando vazamento das estatísticas de avaliação para o ajuste.
@@ -151,7 +151,7 @@ As injeções operam sobre as grandezas físicas, antes da normalização, pois 
 Cada falha começa em um instante sorteado dentro da primeira metade da janela, garantindo trecho afetado suficiente para a medida de latência.
 Vinte por cento das janelas de validação e teste foram corrompidas, com as cinco classes em rodízio; o treino permanece íntegro.
 
-Aplicando-se limites de plausibilidade física a cada canal, nenhuma das 3\,191 janelas normais de teste é sinalizada, mas as falhas de ganho, sensor travado e lacuna atravessam a verificação em 100\,\% dos casos, contra 32,5\,\% de detecção para a deriva e 96,2\,\% para o pico.
+Aplicando-se limites de plausibilidade física a cada canal, nenhuma das 3\,191 janelas de teste é sinalizada antes da injeção, mas as falhas de ganho, sensor travado e lacuna atravessam a verificação em 100\,\% dos casos, contra 37,8\,\% de detecção para a deriva e 96,3\,\% para o pico.
 Três das cinco classes são invisíveis a uma regra de faixa, o que delimita o que um detector aprendido precisa acrescentar.
 
 \subsection{Modelos avaliados}
@@ -161,9 +161,9 @@ Os três detectores compartilham o mesmo protocolo: são ajustados somente em ja
 O \emph{limiar} constitui a linha de base não aprendida.
 Para cada canal, estima média e desvio padrão na operação normal e atribui a cada amostra o maior afastamento padronizado entre os canais, reproduzindo a verificação que seria escrita diretamente no firmware.
 
-A \emph{análise de componentes principais} (PCA) atua como autoencoder linear: projeta a janela em subespaço de menor dimensão, reconstrói e usa o erro de reconstrução como escore, respondendo se a não linearidade é necessária ao problema.
+A PCA atua como autoencoder linear: projeta a janela em subespaço de menor dimensão, reconstrói e usa o erro de reconstrução como escore, respondendo se a não linearidade é necessária ao problema.
 
-O \emph{autoencoder recorrente} comprime a janela por uma rede de memória de longo e curto prazo (LSTM) \cite{hochreiter1997lstm} e a reconstrói a partir da representação latente \cite{goodfellow2016deep}.
+O \emph{autoencoder recorrente} comprime a janela por uma rede LSTM \cite{hochreiter1997lstm} e a reconstrói a partir da representação latente \cite{goodfellow2016deep}.
 Por processar a janela como sequência, dispõe da dependência temporal que os dois primeiros ignoram.
 A dimensão latente foi fixada em 16 para ambos, de modo que a diferença entre eles seja atribuível à não linearidade e à memória, e não à capacidade de compressão.
 O codificador recorrente possui uma camada LSTM com 32 unidades seguida de projeção linear para o gargalo, enquanto o decodificador recebe esse vetor repetido pelos 60 instantes, emprega outra camada LSTM com 32 unidades e projeta a saída para os seis canais.
@@ -171,16 +171,16 @@ O ajuste minimizou o erro quadrático médio com AdamW, taxa de aprendizado de $
 O treinamento foi interrompido após cinco épocas sem redução mínima de $10^{-4}$ na perda da validação normal, restaurando-se os parâmetros da melhor época.
 
 
-O limiar de decisão de cada detector é calibrado sobre a distribuição de escores das janelas normais de validação, nunca sobre o teste, que é consultado uma única vez ao final.
+O limiar de decisão de cada detector é fixado em $\mu + 3\sigma$ sobre a distribuição de escores das janelas normais de validação, nunca sobre o teste, que é consultado uma única vez ao final.
 
 A métrica principal é a área sob a curva de precisão e revocação (AUC-PR).
 A escolha decorre do desequilíbrio entre as classes: janelas anômalas constituem 20\,\% do conjunto de avaliação, e nesse regime a acurácia é inexpressiva, pois um detector que classifique tudo como normal já alcança 80\,\%.
-A área sob a curva ROC também é inadequada, porque o grande número de verdadeiros negativos mantém a taxa de falso positivo baixa mesmo quando a precisão é ruim \cite{saito2015precision}; a AUC-PR, por depender da precisão, não apresenta essa complacência.
+A área sob a curva ROC (Receiver Operating Characteristic) também é inadequada, porque o grande número de verdadeiros negativos mantém a taxa de falso positivo baixa mesmo quando a precisão é ruim \cite{saito2015precision}; a AUC-PR, por depender da precisão, não apresenta essa complacência.
 
 São reportadas ainda F1, precisão e revocação no limiar calibrado, o número de parâmetros e a \emph{latência de detecção} --- o número de amostras entre o início da falha e o cruzamento do limiar.
 A latência importa porque um detector que sinalize tarde demais não cumpre a função de alarme, ainda que sua AUC-PR seja alta.
 
-Os resultados foram obtidos com três sementes, e são reportados como média e desvio padrão entre as execuções.
+Os resultados foram obtidos com três sementes (42, 1337 e 2026), e são reportados como média e desvio padrão entre as execuções.
 
 %==============================================================================
 \section{Resultados}
@@ -190,8 +190,8 @@ Os resultados foram obtidos com três sementes, e são reportados como média e 
 
 \ResultTable
 
-Na Tabela~\ref{tab:resultados}, a AUC-PR do autoencoder com a média foi \ResultAutoencoderAucPrMean{}, contra \ResultLimiarAucPrMean{} do limiar, enquanto com o máximo as respectivas AUC-PR foram \ResultAutoencoderAucPrMax{} e \ResultLimiarAucPrMax{}, sem separação comparável.
-O ganho obtido pelo autoencoder sob a média veio com o maior custo de representação: \ResultAutoencoderParamsMean{} parâmetros aprendidos, ante \ResultPcaParamsMean{} do PCA e \ResultLimiarParamsMean{} do limiar.
+A Tabela~\ref{tab:resultados} mostra separação entre os detectores apenas sob a média, em que o autoencoder alcança \ResultAutoencoderAucPrMean{} contra \ResultLimiarAucPrMean{} do limiar; sob o máximo os três praticamente empatam.
+O ganho obtido sob a média veio com o maior custo computacional: o autoencoder exige \ResultAutoencoderParamsMean{} parâmetros e \ResultAutoencoderSecondsMean{}\,s de ajuste em CPU, contra \ResultPcaSecondsMean{}\,s do PCA e \ResultLimiarSecondsMean{}\,s do limiar.
 
 \begin{figure}[htbp]
 \centering
@@ -228,7 +228,7 @@ O comportamento oposto aparece no pico, onde o PCA alcança \ResultPcaPicoMax{} 
 Uma projeção linear reconstrói mal um valor extremo isolado, enquanto a rede recorrente acomoda parcialmente a perturbação e reduz o próprio erro: a capacidade que beneficia a deriva prejudica o pico.
 
 
-As classes sensor travado e lacuna permanecem próximas do acaso nos três detectores e nas duas agregações.
+As classes sensor travado e lacuna permanecem no piso de acaso --- \ResultChanceAucPr{}, a prevalência de cada classe no recorte em que é avaliada --- nos três detectores e nas duas agregações.
 Ambas foram injetadas em sinais que atravessam longos trechos genuinamente constantes em operação normal, como a velocidade com o veículo parado; congelar um sinal já congelado não produz assinatura detectável, de modo que o resultado mede a inadequação do par falha--canal, e não a incapacidade dos modelos.
 
 A progressão entre as três estratégias é, ainda assim, consistente: a validação de faixa não sinaliza nenhuma janela com ganho, sensor travado ou lacuna, a linha de base estatística recupera parte do ganho, e o detector aprendido acrescenta a deriva.

@@ -96,6 +96,17 @@ def _finite(value: Any, path: str) -> float:
     return float(value)
 
 
+def _prevalence(bloco: dict[str, Any], path: str) -> float:
+    """Fração de janelas anômalas no recorte de uma classe de falha."""
+
+    anomalas = _finite(bloco["anomaly_support"], f"{path}.anomaly_support")
+    normais = _finite(bloco["normal_support"], f"{path}.normal_support")
+    total = anomalas + normais
+    if total <= 0:
+        raise ResultValidationError(f"{path} não possui janelas.")
+    return anomalas / total
+
+
 def load_results(results_dir: Path, aggregation: str) -> dict[str, list[dict[str, Any]]]:
     """Carrega os JSON de um diretório, conferindo que formam a grade esperada.
 
@@ -182,6 +193,17 @@ def summarize(
                 )
                 for classe in FAULTS
             },
+            # Piso de acaso da AUC-PR desagregada: na desagregação cada classe
+            # é comparada somente com as janelas normais, então o piso é a
+            # prevalência da classe nesse recorte. Sem ele, "próximo do acaso"
+            # no texto seria uma afirmação que o leitor não pode conferir.
+            "chance": Aggregate.of(
+                [
+                    _prevalence(r["test"]["per_fault"][classe], f"per_fault.{classe}")
+                    for r in execucoes
+                    for classe in FAULTS
+                ]
+            ),
         }
         # A latência só é comparável quando houve detecção em todas as execuções.
         latencias = [
@@ -276,6 +298,18 @@ def build_macros(resumos: dict[str, dict[str, dict[str, Any]]]) -> str:
     linhas = [
         "% Gerado por src/report.py — NÃO EDITAR À MÃO.",
         "% Precisando de um número novo no texto, acrescente a macro ao report.py.",
+        "",
+    ]
+    # O piso de acaso não depende do modelo nem da agregação: ele vem da
+    # composição do conjunto de avaliação, idêntica nas duas grades. Sai uma
+    # vez só, sem sufixo.
+    chances = [
+        entrada["chance"].mean
+        for resumo in resumos.values()
+        for entrada in resumo.values()
+    ]
+    linhas += [
+        _command("ResultChanceAucPr", _decimal(statistics.fmean(chances), 3)),
         "",
     ]
     for agregacao, resumo in resumos.items():

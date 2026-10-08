@@ -152,18 +152,28 @@ uma faixa de plausibilidade física (RPM entre 0 e 8.000, velocidade entre 0 e 3
 km/h, e assim por diante). Essas faixas **não** são os extremos observados nos
 dados; são os limites que uma validação real checaria.
 
-Medindo sobre 400 janelas do split de teste por classe:
+Medindo sobre o **conjunto de avaliação do experimento** — as 3.191 janelas de
+teste, com 127 a 128 janelas por classe, nas três sementes canônicas:
 
 | Falha | Canal | Passa pela checagem |
 | ----- | ----- | ------------------: |
 | **Ganho** | `rpm` | **100,0 %** |
 | **Travado** | `velocidade` | **100,0 %** |
 | **Lacuna** | `fluxo_ar` | **100,0 %** |
-| Deriva | `temp_adm` | 67,5 % |
-| Pico | `pressao_adm` | 3,8 % |
+| Deriva | `temp_adm` | 62,2 % |
+| Pico | `pressao_adm` | 3,7 % |
 
-E nenhuma das 3.191 janelas normais do teste viola a faixa — a regra não produz
-falso positivo, ela simplesmente é cega para três das cinco classes.
+E nenhuma das 3.191 janelas de teste viola a faixa antes da injeção — a regra não
+produz falso positivo, ela simplesmente é cega para três das cinco classes.
+
+Reproduzir com `python -m src.verifica_faixa`, de dentro de `artigo-2/`. As três
+linhas em 100 % são determinísticas; deriva e pico variam com a semente (deriva
+entre 57,8 % e 64,8 %) e entram como média das três execuções.
+
+Uma medição anterior, sobre 400 janelas sorteadas por classe fora do conjunto de
+avaliação, dava 67,5 % para a deriva e 3,8 % para o pico. Os valores acima a
+substituem: o artigo cita esses percentuais ao lado das 3.191 janelas de teste,
+então eles precisam vir do conjunto que o experimento de fato avalia.
 
 Esses números sustentam o artigo inteiro e devem aparecer na Metodologia ou nos
 Resultados: três das cinco falhas são **completamente invisíveis** para uma regra

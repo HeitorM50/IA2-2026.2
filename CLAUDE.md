@@ -185,13 +185,13 @@ Iniciado em **06/10**, com três dias de prazo. O escopo já é a versão enxuta
 - [x] Tema definido: detecção não supervisionada de falha de sensor em telemetria
       veicular com autoencoder recorrente (Rota II)
 - [x] Esqueleto de `artigo-2/` montado, LaTeX compilando limpo
-- [ ] Fechar a divisão de trabalho da dupla
-- [ ] Baixar e **verificar** o dataset (KIT, DOI `10.35097/1130`)
-- [ ] Implementar o pipeline em `artigo-2/src/` (ver `artigo-2/src/README.md`)
-- [ ] Executar a grade de 3 modelos × 3 seeds
-- [ ] Escrever o artigo
-- [ ] Revisar contra os 4 critérios e o limite de 4 páginas
-- [ ] Subir no Teams (os **dois**, cada um na pasta da própria matrícula)
+- [x] Fechar a divisão de trabalho da dupla
+- [x] Baixar e **verificar** o dataset (KIT, DOI `10.35097/1130`)
+- [x] Implementar o pipeline em `artigo-2/src/` (ver `artigo-2/src/README.md`)
+- [x] Executar a grade de 3 modelos × 3 seeds, nas duas agregações
+- [x] Escrever o artigo
+- [x] Revisar contra os 4 critérios e o limite de 4 páginas (#42)
+- [ ] Subir no Teams (os **dois**, cada um na pasta da própria matrícula) — #43
 
 Decisões em `artigo-2/NOTAS.md`; protocolo em `artigo-2/PLANO-EXPERIMENTAL.md`.
 

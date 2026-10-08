@@ -135,9 +135,11 @@ Anotar aqui, com data, cada decisão fechada. Isso vira material da Metodologia.
   porque o padrão continua devolvendo os splits normalizados.
 - **06/10/2026 — o argumento central está medido, não afirmado:** ganho, sensor
   travado e lacuna passam pela checagem de faixa em **100 %** das janelas; a
-  deriva passa em 67,5 % e o pico em apenas 3,8 %. Nenhuma das 3.191 janelas
-  normais do teste viola a faixa. Três das cinco falhas são invisíveis para uma
-  regra, e o pico é justamente onde o limiar estatístico deve vencer.
+  deriva passa em 62,2 % e o pico em apenas 3,7 %. Nenhuma das 3.191 janelas de
+  teste viola a faixa antes da injeção. Três das cinco falhas são invisíveis para
+  uma regra, e o pico é justamente onde o limiar estatístico deve vencer.
+  Números remedidos em 08/10 sobre o conjunto de avaliação do experimento (ver a
+  nota da #42); os anteriores vinham de uma amostra separada de 400 janelas.
 - **06/10/2026 — lacuna e sensor travado são parentes por construção.** Depois da
   reamostragem, perda de pacote vira valor repetido, que é o mesmo efeito de um
   sensor congelado; o que as separa é a duração. Lacunas acima de `gap_s`
@@ -285,6 +287,29 @@ Anotar aqui, com data, cada decisão fechada. Isso vira material da Metodologia.
   placeholder, figura e tabela com `\label` e citadas por `\ref`, 13 referências com
   o dataset entre elas, `IEEEtran` intacto, uma frase por linha. O número do resumo
   coincide com o da tabela e a conclusão não traz resultado novo.
+- **08/10/2026 — revisão crítica contra os quatro critérios (#42).** Seis achados,
+  todos corrigidos:
+  1. **Critério 2, reprodutibilidade:** nenhuma semente aparecia no artigo. Agora
+     constam a do sorteio de sessões (20261009) e as três de treinamento.
+  2. **Critério 2:** o texto dizia que o limiar de decisão era "calibrado sobre a
+     validação normal" sem dar a regra. Agora diz `μ + 3σ`, que é o que o código faz.
+  3. **Critério 1:** ROC era usada sem expansão da sigla.
+  4. **Coerência:** a Introdução pergunta "a que custo computacional?" e os
+     Resultados só traziam contagem de parâmetros. As macros de tempo já existiam e
+     não eram citadas; agora o texto reporta 212,8 s contra 0,1 s do limiar.
+  5. **Critério 4:** "próximas do acaso" era inverificável. Entrou a macro
+     `\ResultChanceAucPr` (0,048, a prevalência da classe no recorte em que é
+     avaliada), com teste próprio.
+  6. **Número errado no artigo:** a deriva era reportada como detectada em 32,5 %
+     pela verificação de faixa e o pico em 96,2 %. Esses valores vinham de uma
+     amostra de 400 janelas por classe, não do conjunto de avaliação. Remedidos pelo
+     caminho canônico de `run.py`: **37,8 %** e **96,3 %**. É exatamente o tipo de
+     número velho que a regra §9 existe para impedir — e ele passou porque não tinha
+     macro. Virou `src/verifica_faixa.py`, versionado e reproduzível.
+- **08/10/2026 — espaço.** As correções levaram o artigo a 5 páginas. Voltou a 4
+  cortando a recitação da tabela nos Resultados (a tabela já traz os quatro valores)
+  e as redefinições de PCA e LSTM, ambas já definidas na Introdução. Nenhum
+  `\vspace`, nenhuma mexida em fonte.
 
 ## O que NÃO pode cair, por mais que aperte
 
@@ -295,13 +320,17 @@ Anotar aqui, com data, cada decisão fechada. Isso vira material da Metodologia.
 
 ## Checklist antes de entregar
 
-- [ ] Cabe em 4 páginas com as referências dentro
-- [ ] O `\nocite{*}` temporário foi removido do `main.tex`
-- [ ] Nenhum texto-guia ou comentário de orientação sobrou visível no PDF
-- [ ] Dataset citado formalmente em `refs.bib`, com DOI
-- [ ] Todas as citações do texto aparecem nas referências (sem `[?]` no PDF)
-- [ ] AUC-PR justificada explicitamente no texto
-- [ ] Seção de limitações escrita a sério, não uma frase protocolar
-- [ ] Nenhum número do artigo digitado à mão — todos vêm de `src/results/`
-- [ ] Nomes, matrículas e e-mails dos dois integrantes corretos no `\author{}`
+- [x] Cabe em 4 páginas com as referências dentro — 4 exatas, sem folga
+- [x] O `\nocite{*}` temporário foi removido do `main.tex`
+- [x] Nenhum texto-guia ou comentário de orientação sobrou visível no PDF
+- [x] Dataset citado formalmente em `refs.bib`, com DOI — `weber2023automotive`
+- [x] Todas as citações do texto aparecem nas referências (sem `[?]` no PDF) — 13
+- [x] AUC-PR justificada explicitamente no texto
+- [x] Seção de limitações escrita a sério, não uma frase protocolar
+- [~] Nenhum número do artigo digitado à mão — todo **resultado** vem de macro;
+      restam três grupos de números de dataset e protocolo digitados, cada um
+      reproduzível por script versionado: as propriedades da coleta
+      (`python src/verifica_dataset.py`) e os percentuais da verificação de faixa
+      (`python -m src.verifica_faixa`). Ver a nota da #42.
+- [x] Nomes, matrículas e e-mails dos dois integrantes corretos no `\author{}`
 - [ ] Os **dois** subiram o PDF no Teams, cada um na pasta da própria matrícula

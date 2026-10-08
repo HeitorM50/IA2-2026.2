@@ -19,6 +19,9 @@ from src.report import Aggregate, ResultValidationError
 def _resultado(modelo: str, seed: int, agregacao: str, auc: float) -> dict:
     por_classe = {
         c: {"auc_pr": auc, "f1": 0.3, "precision": 0.4, "recall": 0.2,
+            # 100 anômalas contra 900 normais: piso de acaso de 0,100, usado
+            # pela macro \ResultChanceAucPr.
+            "anomaly_support": 100, "normal_support": 900,
             "latency": {"defined": True, "detected": 5, "undetected": 1,
                         "mean_detected_samples": 7.0, "median_detected_samples": 7.0}}
         for c in report.FAULTS
@@ -132,6 +135,29 @@ def test_macros_cobrem_todos_os_modelos_e_classes(tmp_path):
             assert f"\\Result{chave}AucPr{sufixo}" in macros
             for classe in report.FAULT_KEYS.values():
                 assert f"\\Result{chave}{classe}{sufixo}" in macros
+
+
+def test_piso_de_acaso_sai_uma_vez_e_vem_da_prevalencia(tmp_path):
+    """A Discussão chama de "piso de acaso" a prevalência da classe no recorte.
+
+    Se a macro fosse digitada à mão, uma mudança na fração de janelas corrompidas
+    deixaria o texto afirmando um piso que não corresponde ao experimento.
+    """
+
+    resumos = {
+        "max": report.summarize(
+            report.load_results(_grade(tmp_path / "a", "max"), "max")
+        ),
+        "mean": report.summarize(
+            report.load_results(_grade(tmp_path / "b", "mean"), "mean")
+        ),
+    }
+
+    macros = report.build_macros(resumos)
+
+    # 100 anômalas em 1.000 janelas do recorte, conforme o fixture.
+    assert "\\newcommand{\\ResultChanceAucPr}{0,100}" in macros
+    assert macros.count("ResultChanceAucPr") == 1
 
 
 def test_relatorio_completo_grava_os_tres_artefatos(tmp_path):
