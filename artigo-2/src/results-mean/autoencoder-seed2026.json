@@ -23,8 +23,8 @@
     "cuda_version": "not_available",
     "device_name": "CPU",
     "device_type": "cpu",
-    "git_commit": "8a54b39dadd73a858a3f3df987a0728de4e0d5ff",
-    "git_dirty": true,
+    "git_commit": "3b341dd6f1a1c4c46e707196e4641bdd8d2f4058",
+    "git_dirty": false,
     "numpy_version": "2.5.3",
     "platform": "linux",
     "python_implementation": "CPython",
@@ -163,7 +163,7 @@
   "training": {
     "best_epoch": 28,
     "best_validation_loss": 0.17609932354381913,
-    "elapsed_seconds": 188.82228457199926,
+    "elapsed_seconds": 197.34371853799894,
     "epochs_ran": 30,
     "history": [
       {

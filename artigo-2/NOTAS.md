@@ -261,6 +261,17 @@ Anotar aqui, com data, cada decisão fechada. Isso vira material da Metodologia.
   faltantes somam cerca de 1,9 página pelo orçamento, o que levaria a ~4,9 — acima
   do limite de 4. Alguma coisa terá de encolher na revisão final (#42).
 
+- **08/10/2026 — grade canônica regerada com procedência limpa.** Os 18 JSONs
+  passam a registrar `git_dirty: false` no commit `3b341dd`. A causa das três
+  tentativas anteriores falharem não era o que parecia: `src/results/` é versionado
+  e a própria execução o reescreve, então o primeiro JSON gravado sujava a árvore e
+  todos os seguintes herdavam a marca. A checagem passou a cobrir só `src/`,
+  excluindo `results`, `results-mean` e `data`.
+- **08/10/2026 — reprodutibilidade confirmada.** Entre a grade anterior e a
+  regerada, mudaram apenas `git_commit`, `git_dirty` e `elapsed_seconds`. **Todas as
+  métricas saíram bit a bit idênticas**, nos dezoito arquivos. Vale uma frase na
+  Metodologia ou na Discussão.
+
 ## O que NÃO pode cair, por mais que aperte
 
 1. A linha de base 3σ — sem ela o resultado do autoencoder não significa nada.
