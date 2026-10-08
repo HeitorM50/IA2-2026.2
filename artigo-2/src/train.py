@@ -290,7 +290,18 @@ def _fit_torch_mse(
 
 
 def _git_metadata() -> tuple[str, bool]:
-    repository_root = Path(__file__).resolve().parents[2]
+    """Commit da execução e se o CÓDIGO diferia dele no momento da execução.
+
+    A verificação cobre apenas `src/`, excluindo os diretórios de resultado. Eles
+    são versionados e a própria execução os reescreve: incluí-los faria toda
+    execução a partir da segunda reportar árvore suja, qualquer que fosse o
+    estado do código, e o campo perderia o sentido. O que importa para a
+    procedência é se o código que rodou corresponde ao commit registrado.
+    """
+
+    source_dir = Path(__file__).resolve().parent
+    repository_root = source_dir.parents[1]
+    relative = source_dir.relative_to(repository_root).as_posix()
     try:
         commit = subprocess.run(
             ["git", "rev-parse", "HEAD"],
@@ -302,7 +313,16 @@ def _git_metadata() -> tuple[str, bool]:
         ).stdout.strip()
         dirty = bool(
             subprocess.run(
-                ["git", "status", "--porcelain"],
+                [
+                    "git",
+                    "status",
+                    "--porcelain",
+                    "--",
+                    relative,
+                    f":(exclude){relative}/results",
+                    f":(exclude){relative}/results-*",
+                    f":(exclude){relative}/data",
+                ],
                 cwd=repository_root,
                 check=True,
                 capture_output=True,

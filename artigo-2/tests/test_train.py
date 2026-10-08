@@ -249,3 +249,22 @@ def test_loop_mse_para_por_perda_de_validacao() -> None:
 def test_calibracao_rejeita_entradas_invalidas(scores, labels, multiplier) -> None:
     with pytest.raises(ValueError):
         calibrate_threshold(scores, labels, multiplier)
+
+
+def test_procedencia_ignora_os_diretorios_de_resultado():
+    """Os resultados são versionados e a própria execução os reescreve.
+
+    Se a checagem de árvore suja os incluísse, toda execução a partir da segunda
+    reportaria código divergente do commit, qualquer que fosse o estado real —
+    e o campo deixaria de significar alguma coisa.
+    """
+
+    from src.train import _git_metadata
+
+    commit, dirty = _git_metadata()
+
+    assert commit != "unavailable"
+    assert dirty is False, (
+        "o código está divergente do commit; commite antes de gerar resultados "
+        "canônicos"
+    )
