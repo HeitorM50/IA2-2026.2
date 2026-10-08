@@ -186,9 +186,8 @@ Os resultados foram obtidos com três sementes, e são reportados como média e 
 \begin{figure}[htbp]
 \centering
 \includegraphics[width=\columnwidth]{auc-pr-por-classe.pdf}
-\caption{AUC-PR por classe de falha sob as duas regras de agregação. A ordenação
-entre os detectores se inverte conforme a regra: o máximo privilegia a falha
-pontual e a média, a sustentada.}
+\caption{AUC-PR por classe de falha sob as duas regras de agregação.
+A ordenação entre os detectores se inverte conforme a regra: o máximo privilegia a falha pontual e a média, a sustentada.}
 \label{fig:auc-por-classe}
 \end{figure}
 
@@ -198,11 +197,40 @@ pontual e a média, a sustentada.}
 %==============================================================================
 \section{Discussão e Limitações}
 %==============================================================================
-% Orçamento: ~0,5 página.
-% Interpretar POR QUE cada detector ganha ou perde em cada classe de falha,
-% não repetir a tabela.
-% As limitações são cobradas nominalmente pelo plano de ensino: falhas injetadas
-% não são falhas reais; o dataset não é do carro da equipe; dados de um só veículo.
+
+\subsection{A regra de agregação decide o veredito}
+
+O resultado mais informativo do experimento não está em qual detector vence, e sim em quanto a resposta depende de uma decisão de protocolo aparentemente secundária.
+Sob agregação pelo máximo os três detectores ficam a menos de três centésimos de distância em AUC-PR, e a tabela converge para um referendo sobre a classe pico.
+Sob agregação pela média o autoencoder passa a \ResultAutoencoderAucPrMean{} contra \ResultLimiarAucPrMean{} da linha de base, uma diferença de quase cinquenta por cento.
+
+Tomar o máximo faz o escore depender de um único instante, privilegiando a falha pontual e descartando a informação de que a degradação persiste; tomar a média dilui o pico isolado entre sessenta amostras e acumula o desvio sustentado.
+Nenhuma das duas é correta em absoluto, pois medem fenômenos diferentes, e a escolha precede qualquer comparação entre modelos.
+
+\subsection{Onde o autoencoder se separa}
+
+A vantagem do autoencoder recorrente concentra-se na deriva, com \ResultAutoencoderDerivaMean{} sob agregação pela média contra \ResultPcaDerivaMean{} do PCA.
+Como ambos comprimem para a mesma dimensão latente, a diferença decorre da não linearidade e da leitura sequencial, e não da capacidade de compressão: a deriva é o modo de falha cuja assinatura existe apenas na evolução temporal, pois nenhum instante isolado é anômalo.
+
+O comportamento oposto aparece no pico, onde o PCA alcança \ResultPcaPicoMax{} sob agregação pelo máximo e supera o autoencoder.
+Uma projeção linear reconstrói mal um valor extremo isolado, enquanto a rede recorrente acomoda parcialmente a perturbação e reduz o próprio erro: a capacidade que beneficia a deriva prejudica o pico.
+
+\subsection{O que o experimento não resolve}
+
+As classes sensor travado e lacuna permanecem próximas do acaso nos três detectores e nas duas agregações.
+Ambas foram injetadas em sinais que atravessam longos trechos genuinamente constantes em operação normal, como a velocidade com o veículo parado; congelar um sinal já congelado não produz assinatura detectável, de modo que o resultado mede a inadequação do par falha--canal, e não a incapacidade dos modelos.
+
+A progressão entre as três estratégias é, ainda assim, consistente: a validação de faixa não sinaliza nenhuma janela com ganho, sensor travado ou lacuna, a linha de base estatística recupera parte do ganho, e o detector aprendido acrescenta a deriva.
+Cada nível incorpora o que o anterior descartava: o valor isolado, depois sua distribuição, por fim a relação temporal entre canais.
+
+\subsection{Limitações}
+
+As anomalias avaliadas são \emph{injetadas}, não observadas: o protocolo controla posição e severidade, o que permite medir latência e desempenho por classe, mas não garante que falhas reais apresentem a mesma assinatura.
+Os dados provêm de um único veículo e não contêm os canais do protótipo de competição que motivou o trabalho, de modo que a validade externa restringe-se a telemetria de arquitetura semelhante.
+A reamostragem para 1\,Hz descarta dinâmica rápida que um barramento dedicado registraria.
+
+O autoencoder não convergiu dentro do orçamento de trinta épocas: a melhor época situou-se entre a vigésima oitava e a trigésima em todas as execuções e a parada antecipada nunca foi acionada, de modo que os valores reportados constituem um limite inferior dessa arquitetura.
+As três execuções por configuração sustentam estimativa de dispersão, não teste de significância.
 
 %==============================================================================
 \section{Conclusão}

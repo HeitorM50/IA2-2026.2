@@ -252,6 +252,15 @@ Anotar aqui, com data, cada decisão fechada. Isso vira material da Metodologia.
   executado. Reexecutar com a árvore limpa custa ~25 min e deixa a procedência
   defensável.
 
+- **08/10/2026 — Discussão e Limitações escrita (#39).** Ocupa 0,57 página medida
+  no PDF, contra orçamento de 0,5. Quatro blocos: a agregação decide o veredito,
+  onde o autoencoder se separa (deriva) e onde perde (pico), o que o experimento não
+  resolve (travado e lacuna), e as limitações. Todo número vem de macro.
+- **08/10/2026 — pressão de página.** Com Resumo, Introdução, Trabalhos
+  Relacionados e Conclusão ainda vazios, o artigo está em 3 páginas. As seções
+  faltantes somam cerca de 1,9 página pelo orçamento, o que levaria a ~4,9 — acima
+  do limite de 4. Alguma coisa terá de encolher na revisão final (#42).
+
 ## O que NÃO pode cair, por mais que aperte
 
 1. A linha de base 3σ — sem ela o resultado do autoencoder não significa nada.
