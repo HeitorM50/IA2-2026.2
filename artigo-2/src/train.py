@@ -152,6 +152,13 @@ def _fit_torch_mse(
             "Detector com fit_mode='torch_mse' também deve herdar de nn.Module."
         )
 
+    # A seed é fixada por ``train_eval`` antes desta chamada. Reinicializar aqui
+    # faz com que ela governe também os pesos, mesmo quando o chamador constrói o
+    # modelo antes de entrar no protocolo comum.
+    reset_parameters = getattr(model, "reset_parameters", None)
+    if callable(reset_parameters):
+        reset_parameters()
+
     torch.use_deterministic_algorithms(True)
     if torch.backends.cudnn.is_available():
         torch.backends.cudnn.deterministic = True

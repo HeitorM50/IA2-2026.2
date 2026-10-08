@@ -223,6 +223,34 @@ REPRESENTATION_CONFIG = RepresentationConfig()
 
 
 @dataclass(frozen=True)
+class AutoencoderConfig:
+    """Arquitetura do autoencoder LSTM e lote usado na inferência."""
+
+    hidden_size: int = 32
+    num_layers: int = 1
+    dropout: float = 0.0
+    score_batch_size: int = 256
+
+    def __post_init__(self) -> None:
+        if self.hidden_size <= 0:
+            raise ValueError("O número de unidades LSTM deve ser positivo.")
+        if self.num_layers <= 0:
+            raise ValueError("O número de camadas LSTM deve ser positivo.")
+        if not 0.0 <= self.dropout < 1.0:
+            raise ValueError("O dropout deve ficar no intervalo [0, 1).")
+        if self.num_layers == 1 and self.dropout != 0.0:
+            raise ValueError("Uma única camada LSTM exige dropout igual a zero.")
+        if self.score_batch_size <= 0:
+            raise ValueError("O lote de inferência deve ser positivo.")
+
+    def as_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+
+AUTOENCODER_CONFIG = AutoencoderConfig()
+
+
+@dataclass(frozen=True)
 class FaultConfig:
     """Parâmetros das cinco injeções de falha.
 

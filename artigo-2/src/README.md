@@ -12,7 +12,7 @@ Antes de escrever qualquer coisa aqui, acionar a skill `experimento-pytorch`.
 | `models/base.py` | interface comum: `fit`, `score_samples`, `score_windows`, `predict`, `n_parameters` | **pronto** (#31) |
 | `models/baseline.py` | limiar 3σ por canal | **pronto** (#31) |
 | `models/pca.py` | PCA como autoencoder linear, erro de reconstrução | **pronto** (#32) |
-| `models/autoencoder.py` | autoencoder LSTM sequência-a-sequência | a criar |
+| `models/autoencoder.py` | autoencoder LSTM sequência-a-sequência | **pronto** (#33) |
 | `train.py` | loop comum de treino (MSE de reconstrução) e calibração do limiar na validação normal | **pronto** (#30) |
 | `metrics.py` | AUC-PR, F1/precisão/revocação no limiar, latência de detecção, desagregação por classe de falha | **pronto** (#29) |
 | `run.py` | orquestra modelo × seed e grava um JSON por execução em `results/` | **pronto** (#30) |
