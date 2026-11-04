@@ -20,6 +20,11 @@ não sustentadas em um sistema RAG sobre as aulas 14–23?
   revisão de embedding, índice FAISS `IndexFlatIP` com vetores normalizados,
   `top_k = 5`, gerador, prompt, temperatura 0, conjunto de perguntas.
 
+O embedding foi congelado como `intfloat/multilingual-e5-base`, revisão
+`d128750597153bb5987e10b1c3493a34e5a4502a`. A segmentação usa o tokenizador da
+mesma revisão, sem tokens especiais, e o E5 recebe os prefixos `passage: ` para
+chunks e `query: ` para perguntas.
+
 ## Pipeline
 
 1. `src/corpus.py` — extrai o texto por página com origem e SHA-256, recompõe
@@ -30,6 +35,10 @@ não sustentadas em um sistema RAG sobre as aulas 14–23?
 5. Geração restrita ao contexto, com abstenção obrigatória (#52).
 6. `src/run.py` orquestra a grade e grava um JSON por configuração × pergunta (#53).
 7. `src/report.py` consolida e emite as macros do artigo (#54).
+
+Os índices são cacheados por hash do corpus, do fluxo canônico de páginas, do
+modelo, da revisão e da configuração. Cada cache registra número de chunks,
+tamanho do índice e tempos de chunking, embedding e construção FAISS.
 
 ## Dataset de avaliação (#49)
 

@@ -35,7 +35,8 @@ def test_catalogo_cobre_as_dez_aulas_nas_tres_partes():
 
 
 def test_execucao_canonica_bloqueada_enquanto_ha_pendencia():
-    assert "recuperacao.modelo_embedding" in pendencias()
+    assert "recuperacao.modelo_embedding" not in pendencias()
+    assert "geracao.modelo_gerador" in pendencias()
     assert "corpus.catalogo" not in pendencias()
     with pytest.raises(RuntimeError, match="não congelado"):
         validar_congelamento()
@@ -57,3 +58,10 @@ def test_protocolo_congelado_passa():
 def test_protocolo_e_serializavel():
     texto = json.dumps(como_dict())
     assert PENDENTE in texto
+
+
+def test_modelo_tokenizador_e_revisao_de_embedding_estao_congelados():
+    assert CONFIG.chunking.tokenizador == "intfloat/multilingual-e5-base"
+    assert CONFIG.recuperacao.modelo_embedding == CONFIG.chunking.tokenizador
+    assert CONFIG.recuperacao.revisao_embedding == "d128750597153bb5987e10b1c3493a34e5a4502a"
+    assert CONFIG.recuperacao.indice_faiss == "IndexFlatIP"
