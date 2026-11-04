@@ -55,3 +55,9 @@ artigo-*/EXPLICACAO-*.md
 !artigo-*/src/results/
 !artigo-*/src/results/*.csv
 !artigo-*/src/results/*.json
+
+# --- corpus do Artigo 3: PDFs e texto extraído não são versionados (#46, #48) ---
+# O manifesto só tem hashes e contagens, então pode ser versionado.
+artigo-*/data/*
+!artigo-*/data/README.md
+!artigo-*/data/manifesto-corpus.json

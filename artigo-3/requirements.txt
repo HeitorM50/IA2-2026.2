@@ -1,0 +1,13 @@
+# Faixas de compatibilidade do pipeline do Artigo 3.
+# A versão exata usada na execução canônica fica em requirements-lock.txt.
+
+# Extração do corpus (#48).
+pymupdf>=1.24,<2
+
+# Chunking, embeddings e índice (#50) — entram quando o modelo for congelado (#46).
+# numpy>=2.0,<3
+# faiss-cpu>=1.8,<2
+# sentence-transformers>=3,<6
+
+# Testes locais.
+pytest>=8,<10
