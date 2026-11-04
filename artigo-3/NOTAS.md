@@ -60,6 +60,12 @@ Status em 04/11/2026. "Proposto" = decidido pela dupla, aguardando confirmação
 - 04/11/2026 — esqueleto do `artigo-3/` criado; extração do corpus implementada
   e testada com PDFs sintéticos. Os PDFs reais (`contexto/art3/`) ainda não estão
   na máquina do Heitor; o catálogo aula→(parte, título) em `src/config.py` está vazio.
+- 04/11/2026 — #52 e #53 (parte independente do índice): contrato `Recuperador`/
+  `Gerador` em `src/contratos.py`, prompt restrito com abstenção (`src/geracao.py`),
+  rubrica (`RUBRICA.md`) e planilha cega com kappa de Cohen (`src/avaliacao_humana.py`),
+  validador do dataset (`src/dataset.py`) e `src/run.py` com retomada e manifesto.
+  Falta: `src.indice.construir_recuperador` (#50) e o backend do gerador, que depende
+  da escolha local vs. API (#46).
 - 04/11/2026 — PDFs reais extraídos (482 páginas). Dois defeitos sistemáticos dos
   slides em LaTeX corrigidos no extrator: acentos soltos antes da letra
   ("Intui¸c˜ao", 553 ocorrências) e rodapé do Beamer repetido em toda página
