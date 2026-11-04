@@ -11,6 +11,14 @@ from pathlib import Path
 import pytest
 from conftest import GeradorFalso, RecuperadorFalso
 
+from src import dataset as ds
+from src.avaliacao_recuperacao import (
+    REGRA_SELECAO,
+    coletar,
+    selecionar,
+    sha256_itens,
+    sha256_protocolo,
+)
 from src.config import CONFIG, ExperimentoConfig
 from src.run import ExecucaoError, executar
 
@@ -115,7 +123,39 @@ def ambiente(tmp_path) -> tuple[ExperimentoConfig, Path]:
 
 
 def _rodar(cfg, repo, split="dev", **kw):
+    if split == "test" and "selecao_top_k" not in kw:
+        kw["selecao_top_k"] = _selecao(cfg)
     return executar(split, fabrica_recuperador=RecuperadorFalso, gerador=GeradorFalso(), cfg=cfg, repo=repo, **kw)
+
+
+def _selecao(cfg: ExperimentoConfig) -> Path:
+    caminho = cfg.results_dir / "top-k-selection.json"
+    dev = ds.carregar(
+        cfg.dataset.dataset_path,
+        split="dev",
+        estrito=True,
+        manifesto_path=cfg.corpus.manifesto_path,
+        cfg=cfg.dataset,
+        corpus=cfg.corpus,
+    )
+    corpus_sha = hashlib.sha256(cfg.corpus.manifesto_path.read_bytes()).hexdigest()
+    artefato = {
+        "schema_version": 1,
+        "regra": REGRA_SELECAO,
+        "candidatos": list(cfg.recuperacao.ks_metricas),
+        "top_k_selecionado": 3,
+        "recall_medio_dev": {"1": 0.5, "3": 1.0, "5": 1.0},
+        "configs": list(cfg.chunking.ids),
+        "perguntas_dev": [item.id for item in dev],
+        "dev_dataset_sha256": sha256_itens(dev),
+        "protocolo_sha256": sha256_protocolo(cfg),
+        "corpus_manifesto_sha256": corpus_sha,
+        "avaliacao_manifesto_sha256": "a" * 64,
+        "rankings_sha256": "b" * 64,
+    }
+    caminho.parent.mkdir(parents=True, exist_ok=True)
+    caminho.write_text(json.dumps(artefato))
+    return caminho
 
 
 def test_dev_de_ponta_a_ponta_grava_um_json_por_par(ambiente):
@@ -155,7 +195,7 @@ def test_saida_existente_sem_resume_e_recusada(ambiente):
 def test_manifesto_incompativel_bloqueia_retomada(ambiente):
     cfg, repo = ambiente
     _rodar(cfg, repo, limite=1, configs=("c128-o0",))
-    outro = replace(cfg, recuperacao=replace(cfg.recuperacao, top_k=3))
+    outro = replace(cfg, recuperacao=replace(cfg.recuperacao, ks_metricas=(1, 3)))
     with pytest.raises(ExecucaoError, match="incompatível.*protocolo_sha256"):
         _rodar(outro, repo, limite=1, configs=("c128-o0",), resume=True)
 
@@ -195,4 +235,53 @@ def test_canonica_recusa_gerador_diferente_do_congelado(ambiente):
     _git(repo, "checkout", "-q", "--detach")
     with pytest.raises(ExecucaoError, match="difere do congelado"):
         executar("test", fabrica_recuperador=RecuperadorFalso, gerador=GeradorFalso(revisao="v1"),
-                 cfg=cfg, repo=repo, configs=("c128-o0",))
+                 cfg=cfg, repo=repo, configs=("c128-o0",), selecao_top_k=_selecao(cfg))
+
+
+def test_canonica_exige_selecao_dev_e_recusa_selecao_adulterada(ambiente):
+    cfg, repo = ambiente
+    with pytest.raises(ExecucaoError, match="exige --selecao-top-k"):
+        executar(
+            "test", fabrica_recuperador=RecuperadorFalso, gerador=GeradorFalso(),
+            cfg=cfg, repo=repo,
+        )
+    caminho = _selecao(cfg)
+    artefato = json.loads(caminho.read_text())
+    artefato["top_k_selecionado"] = 5
+    caminho.write_text(json.dumps(artefato))
+    _git(repo, "checkout", "-q", "--detach")
+    with pytest.raises(ExecucaoError, match="não corresponde à regra"):
+        executar(
+            "test", fabrica_recuperador=RecuperadorFalso, gerador=GeradorFalso(),
+            cfg=cfg, repo=repo, selecao_top_k=caminho,
+        )
+
+
+def test_avaliacao_recuperacao_ponta_a_ponta_gera_artefatos_e_selecao(ambiente):
+    cfg, _ = ambiente
+    saida = coletar(
+        "dev",
+        fabrica_recuperador=RecuperadorFalso,
+        cfg=cfg,
+        saida=cfg.results_dir / "retrieval" / "dev",
+    )
+    for nome in ("rankings.jsonl", "summary.json", "summary.csv", "run-manifest.json"):
+        assert (saida / nome).is_file()
+    registros = [
+        json.loads(linha)
+        for linha in (saida / "rankings.jsonl").read_text().splitlines()
+    ]
+    assert len(registros) == len(cfg.chunking.ids) * cfg.dataset.n_dev
+    primeiro = registros[0]
+    assert primeiro["ranking_id"] and primeiro["manifesto_avaliacao_sha256"]
+    assert [r["posicao"] for r in primeiro["ranking"]] == [1, 2, 3, 4, 5]
+    resumo = json.loads((saida / "summary.json").read_text())
+    assert set(resumo["por_configuracao"]) == set(cfg.chunking.ids)
+    assert set(resumo["por_configuracao"]["slide"]) == {"geral", "V", "VI", "VII"}
+
+    selecao = selecionar(saida)
+    artefato = json.loads(selecao.read_text())
+    # O recuperador falso só devolve aula 14; todos os candidatos empatam na
+    # grade completa e a regra escolhe o menor k.
+    assert artefato["top_k_selecionado"] == 1
+    assert artefato["rankings_sha256"]

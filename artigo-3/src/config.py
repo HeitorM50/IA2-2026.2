@@ -108,7 +108,7 @@ class RecuperacaoConfig:
     # Vetores normalizados + produto interno = similaridade de cosseno.
     indice_faiss: str = "IndexFlatIP"
     cache_dir: Path = ARTIGO / "cache" / "indices"
-    top_k: int = 5
+    # Candidatos avaliados em dev. O k usado em test vem do artefato de seleção.
     ks_metricas: tuple[int, ...] = (1, 3, 5)
 
 

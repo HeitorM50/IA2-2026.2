@@ -65,3 +65,5 @@ def test_modelo_tokenizador_e_revisao_de_embedding_estao_congelados():
     assert CONFIG.recuperacao.modelo_embedding == CONFIG.chunking.tokenizador
     assert CONFIG.recuperacao.revisao_embedding == "d128750597153bb5987e10b1c3493a34e5a4502a"
     assert CONFIG.recuperacao.indice_faiss == "IndexFlatIP"
+    assert CONFIG.recuperacao.ks_metricas == (1, 3, 5)
+    assert not hasattr(CONFIG.recuperacao, "top_k")

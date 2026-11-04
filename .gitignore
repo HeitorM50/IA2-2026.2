@@ -74,6 +74,11 @@ artigo-*/src/results/raw/**/*.json
 !artigo-*/src/results/raw/**/environment.json
 !artigo-*/src/results/**/run.log
 
+# Rankings de recuperação também carregam texto dos slides; só resumos e
+# manifestos podem ser versionados.
+artigo-*/src/results/retrieval/**/rankings.jsonl
+!artigo-*/src/results/retrieval/**/summary.csv
+
 # --- cache local de embeddings e índices do Artigo 3 ---
 # Reconstruível a partir do corpus, modelo e configuração congelados.
 artigo-*/cache/
