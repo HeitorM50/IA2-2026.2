@@ -39,7 +39,7 @@ Status em 04/11/2026. "Proposto" = decidido pela dupla, aguardando confirmação
 | Configurações | congelado | linha de base estrutural `slide` (um chunk por slide) + janelas fixas 128/256/512 tokens × 0%/20% de sobreposição = 7 configurações (`src/config.py`) |
 | Métrica principal de recuperação | congelado | Recall@k; um k global entre 1/3/5 é escolhido só em dev por maior Recall médio, com desempate pelo menor k; MRR@5 e Precision@k secundárias |
 | Métricas da resposta | proposto | correção, completude, fidelidade, afirmações não sustentadas, abstenção correta |
-| Gerador | **aberta** | modelo aberto local (reprodutível) vs. API versionada |
+| Gerador | congelado (04/11) | Qwen2.5-3B-Instruct, revisão `aa8e725`, decodificação gulosa, Colab T4 fp16. Escolhido por reprodutibilidade (pesos abertos, revisão fixa, sem API). Licença Qwen Research (uso acadêmico) |
 | Publicação do dataset | proposto | Zenodo com DOI, licença CC BY 4.0, só perguntas/respostas/referência à página — sem texto integral dos slides |
 
 ### Riscos
@@ -90,3 +90,11 @@ Status em 04/11/2026. "Proposto" = decidido pela dupla, aguardando confirmação
   MRR@5, cobertura multitrecho, redundância por IoU de tokens, latência e
   agregações geral/V/VI/VII. A seleção global de `top-k` usa somente `dev` e
   passa a ser uma dependência obrigatória da execução canônica de `test`.
+- 04/11/2026 — gerador congelado: Qwen2.5-3B-Instruct (`aa8e725`), gulosa.
+  Ensaio local com o Qwen2.5-0.5B (mesma família e template; o 3B não cabe nos
+  7 GB da máquina) levou ao prompt v2: na v1 o cabeçalho `[1] (aula, p.)` tinha o
+  formato da citação, o modelo o copiava, resumia os trechos em vez de responder
+  e o eco contava como citação. Com trechos em tags, respondeu direto e se absteve
+  corretamente numa pergunta fora do corpus. O 0.5B não citou; conferir com o 3B
+  no ensaio `dev` antes da grade. As perguntas do ensaio foram ad hoc, nenhuma do
+  dataset.

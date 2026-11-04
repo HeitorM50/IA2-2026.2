@@ -11,10 +11,13 @@ from src.geracao import eh_abstencao, extrair_citacoes, montar_prompt, responder
 def test_prompt_numera_trechos_restringe_e_pede_abstencao():
     trechos = RecuperadorFalso("c128-o0").buscar("atenção", 2)
     prompt = montar_prompt("O que é atenção?", trechos)
-    assert "[1] (aula 14, p. 1)" in prompt and "[2] (aula 14, p. 2)" in prompt
+    assert '<trecho id="1" aula="14" pagina="1">' in prompt
+    assert '<trecho id="2" aula="14" pagina="2">' in prompt
+    # o cabeçalho do trecho não pode ter o formato da citação, senão o eco vira citação
+    assert "[1]" not in prompt.split("<contexto>")[1]
     assert "SOMENTE" in prompt
     assert CONFIG.geracao.texto_abstencao in prompt
-    assert prompt.rstrip().endswith("Pergunta: O que é atenção?\nResposta:")
+    assert prompt.rstrip().endswith("Pergunta: O que é atenção?")
 
 
 def test_prompt_sem_trechos_e_explicito():
@@ -50,3 +53,9 @@ def test_mesmo_contexto_mesmo_prompt():
     a = responder("q", "p?", rec, GeradorFalso(), top_k=2)
     b = responder("q", "p?", rec, GeradorFalso(), top_k=2)
     assert a.prompt == b.prompt and a.resposta == b.resposta
+
+
+def test_eco_das_tags_nao_conta_como_citacao():
+    ger = GeradorFalso(resposta='<trecho id="2" aula="14" pagina="2"> texto copiado </trecho> A resposta [1].')
+    r = responder("q", "p?", RecuperadorFalso("slide"), ger, top_k=3)
+    assert r.citacoes == [1]

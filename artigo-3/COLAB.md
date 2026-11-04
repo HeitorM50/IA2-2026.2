@@ -10,8 +10,9 @@ no notebook: tudo vem de `src/config.py`.
 !git checkout <SHA-DO-COMMIT-CONGELADO>
 %cd artigo-3
 
-# 2. Ambiente exato
-!pip install -q -r requirements-lock.txt
+# 2. Ambiente: faixas do requirements.txt sobre o torch do Colab.
+#    A versão exata usada fica gravada em src/results/raw/<split>/pip-freeze.txt.
+!pip install -q -r requirements.txt
 
 # 3. Corpus a partir do Drive (os PDFs não estão no repositório)
 from google.colab import drive

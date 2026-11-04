@@ -116,8 +116,10 @@ class RecuperacaoConfig:
 class GeracaoConfig:
     """Gerador congelado para a avaliação de fidelidade e alucinação (#52)."""
 
-    modelo_gerador: str = PENDENTE
-    revisao_gerador: str = PENDENTE
+    # Decisão de 04/11/2026 (#46): modelo aberto, roda na T4 do Colab em fp16.
+    # Licença Qwen Research License (uso acadêmico permitido).
+    modelo_gerador: str = "Qwen/Qwen2.5-3B-Instruct"
+    revisao_gerador: str = "aa8e72537993ba99e69dfaafa59ed015b17504d1"
     temperatura: float = 0.0
     max_tokens_resposta: int = 256
     texto_abstencao: str = "Não há informação suficiente nas aulas para responder."
