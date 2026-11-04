@@ -35,8 +35,14 @@ não sustentadas em um sistema RAG sobre as aulas 14–23?
 
 60 itens: 30 factuais, 15 contextuais, 10 multitrecho, 5 não respondíveis.
 Split fixado **antes** de qualquer experimento: 15 `dev`, 45 `test`.
+O `dev` contém 8/4/2/1 itens por categoria e o `test`, 22/11/8/4.
+Cada aula recebe seis itens e o `dev` cobre as dez aulas; a alocação imutável
+está em `data/planejamento-dataset.jsonl`.
 O `dev` serve para depurar o pipeline e o prompt; o `test` é lido uma única vez,
 na execução canônica (7 × 45 = 315 pares).
+O contrato está em `data/dataset-schema.json`; as regras de evidência, afirmação
+não sustentada, abstenção e revisão cruzada estão em
+`docs/dataset/GUIA-ANOTACAO.md`.
 
 ## Métricas
 

@@ -74,3 +74,10 @@ Status em 04/11/2026. "Proposto" = decidido pela dupla, aguardando confirmação
   (21/54, divisor de seção), nenhuma duplicada por overlay.
 - 04/11/2026 — acrescentada a estratégia `slide` como linha de base, para que a
   comparação seja entre estratégias de segmentação e não só entre valores de tamanho.
+- 04/11/2026 — #49 (infraestrutura): congelados 60 IDs em
+  `data/planejamento-dataset.jsonl`, com 15 `dev`, 45 `test`, seis itens por aula
+  e composição estratificada por categoria. Acrescentados JSON Schema, guia de
+  anotação e revisão cruzada, licença CC BY 4.0 apenas para as anotações,
+  metadados provisórios de citação e validação contra o manifesto do corpus.
+  A redação das perguntas permanece pendente porque os JSONL extraídos não são
+  versionados e não estão presentes nesta cópia do workspace.

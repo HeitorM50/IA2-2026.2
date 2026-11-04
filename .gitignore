@@ -61,6 +61,8 @@ artigo-*/EXPLICACAO-*.md
 artigo-*/data/*
 !artigo-*/data/README.md
 !artigo-*/data/manifesto-corpus.json
+!artigo-*/data/dataset-schema.json
+!artigo-*/data/planejamento-dataset.jsonl
 
 # --- resultados brutos do Artigo 3 ---
 # Os JSON por pergunta carregam o texto dos slides recuperado; ficam fora do Git
