@@ -55,3 +55,17 @@ artigo-*/EXPLICACAO-*.md
 !artigo-*/src/results/
 !artigo-*/src/results/*.csv
 !artigo-*/src/results/*.json
+
+# --- corpus do Artigo 3: PDFs e texto extraído não são versionados (#46, #48) ---
+# O manifesto só tem hashes e contagens, então pode ser versionado.
+artigo-*/data/*
+!artigo-*/data/README.md
+!artigo-*/data/manifesto-corpus.json
+
+# --- resultados brutos do Artigo 3 ---
+# Os JSON por pergunta carregam o texto dos slides recuperado; ficam fora do Git
+# até a decisão de redistribuição (#46). O run.log precisa escapar do *.log acima.
+artigo-*/src/results/raw/**/*.json
+!artigo-*/src/results/raw/**/run-manifest.json
+!artigo-*/src/results/raw/**/environment.json
+!artigo-*/src/results/**/run.log
