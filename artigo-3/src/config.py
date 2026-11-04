@@ -41,9 +41,23 @@ class CorpusConfig:
     # Número da aula extraído do nome do arquivo, ex.: "Aula14-Transformers.pdf".
     padrao_nome_arquivo: str = r"(?i)aula[\s_-]*0*(\d{1,2})"
 
-    # aula -> (parte, título). Preencher com os dados dos PDFs (#48).
-    # Enquanto vazio, a extração roda, mas o manifesto marca o catálogo como pendente.
-    catalogo: dict[int, tuple[str, str]] = field(default_factory=dict)
+    # aula -> (parte, título). Títulos copiados da capa de cada PDF.
+    # Os slides não numeram as partes; a divisão segue o bloco de conteúdo
+    # (V: PLN e LLMs; VI: aprendizado por reforço; VII: XAI e fairness).
+    catalogo: dict[int, tuple[str, str]] = field(
+        default_factory=lambda: {
+            14: ("V", "Fundamentos de Processamento de Linguagem Natural"),
+            15: ("V", "Arquitetura Transformer e Mecanismos de Atenção"),
+            16: ("V", "LLMs, Embeddings e Fine-tuning"),
+            17: ("V", "Prompt Engineering e Aplicações Práticas"),
+            18: ("VI", "Fundamentos de Aprendizado por Reforço"),
+            19: ("VI", "Deep RL: Deep Q-Networks e Variantes"),
+            20: ("VI", "Métodos de Política, PPO e Fechamento"),
+            21: ("VII", "Introdução à IA Explicável (XAI)"),
+            22: ("VII", "Ferramentas Práticas de XAI"),
+            23: ("VII", "Fairness, Viés e Accountability em Sistemas de IA"),
+        }
+    )
 
     # Página com menos caracteres que isso é registrada como suspeita
     # (slide só com figura, fórmula renderizada como imagem, etc.).
@@ -52,21 +66,32 @@ class CorpusConfig:
 
 @dataclass(frozen=True)
 class ChunkingConfig:
-    """Grade de configurações comparadas (#50). Tamanhos em tokens, não caracteres."""
+    """Estratégias comparadas (#50). Tamanhos em tokens, não caracteres.
+
+    Duas famílias, para que a comparação seja entre estratégias e não só entre
+    valores de um parâmetro:
+    - janela fixa de tokens, com e sem sobreposição (``cT-oS``);
+    - estrutural: um chunk por slide (``slide``), a segmentação natural do
+      material, que funciona como linha de base sem nenhum parâmetro de tamanho.
+    """
 
     tamanhos_tokens: tuple[int, ...] = (128, 256, 512)
     sobreposicoes: tuple[float, ...] = (0.0, 0.2)
+    estruturais: tuple[str, ...] = ("slide",)
+    # Um slide maior que o limite de entrada do modelo de embedding é truncado
+    # pelo próprio modelo; o chunker deve registrar quantos slides passaram do limite.
     # O tokenizador é o do próprio modelo de embedding, para que "128 tokens"
     # signifique o que o modelo de fato enxerga.
     tokenizador: str = PENDENTE
 
     @property
     def ids(self) -> tuple[str, ...]:
-        return tuple(
+        janelas = tuple(
             f"c{t}-o{round(s * 100)}"
             for t in self.tamanhos_tokens
             for s in self.sobreposicoes
         )
+        return self.estruturais + janelas
 
 
 @dataclass(frozen=True)

@@ -19,13 +19,31 @@ import hashlib
 import json
 import re
 import sys
+import unicodedata
+from collections import Counter
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
 from src.config import CONFIG, CorpusConfig
 
 PARTES_VALIDAS = ("V", "VI", "VII")
-VERSAO_EXTRATOR = 1
+VERSAO_EXTRATOR = 2
+
+# Slides em LaTeX sem fonte T1 guardam o acento como caractere separado *antes*
+# da letra ("Intui¸c˜ao"). Cada acento solto vira o diacrítico combinante.
+_ACENTOS_SOLTOS = {
+    "´": "́",  # ´ agudo
+    "`": "̀",  # ` grave
+    "˜": "̃",  # ˜ til
+    "ˆ": "̂",  # ˆ circunflexo
+    "¸": "̧",  # ¸ cedilha
+    "¨": "̈",  # ¨ trema
+}
+_RE_ACENTO = re.compile("([" + "".join(_ACENTOS_SOLTOS) + "])([A-Za-zı])")
+# Contador de página do Beamer no fim do rodapé, ex.: "6 / 48".
+_RE_CONTADOR = re.compile(r"\s*\d+\s*/\s*\d+\s*$")
+# Uma linha final é rodapé quando se repete em pelo menos esta fração das páginas.
+FRACAO_RODAPE = 0.5
 
 
 class CorpusError(RuntimeError):
@@ -59,6 +77,39 @@ def sha256_arquivo(caminho: Path) -> str:
     return h.hexdigest()
 
 
+def corrigir_acentos(texto: str) -> str:
+    """Recompõe acentos soltos; só troca quando o resultado é um único caractere."""
+
+    def compor(m: re.Match) -> str:
+        letra = "i" if m.group(2) == "ı" else m.group(2)  # ı + ´ → í
+        composto = unicodedata.normalize("NFC", letra + _ACENTOS_SOLTOS[m.group(1)])
+        return composto if len(composto) == 1 else m.group(0)
+
+    return _RE_ACENTO.sub(compor, texto)
+
+
+def _ultima_linha(texto: str) -> str:
+    return _RE_CONTADOR.sub("", texto.rsplit("\n", 1)[-1]).strip() if texto else ""
+
+
+def remover_rodape(textos: list[str]) -> tuple[list[str], str | None]:
+    """Remove a última linha quando ela é o rodapé repetido do PDF.
+
+    Devolve os textos limpos e o rodapé identificado (sem o contador), ou None.
+    """
+    contagem = Counter(u for u in map(_ultima_linha, textos) if u)
+    if not contagem:
+        return textos, None
+    rodape, n = contagem.most_common(1)[0]
+    if n < max(2, FRACAO_RODAPE * len(textos)):
+        return textos, None
+    limpos = [
+        (t.rsplit("\n", 1)[0].strip() if "\n" in t else "") if _ultima_linha(t) == rodape else t
+        for t in textos
+    ]
+    return limpos, rodape
+
+
 def normalizar(texto: str) -> str:
     """Normaliza espaços sem apagar quebras de linha nem fronteiras de bloco.
 
@@ -66,6 +117,7 @@ def normalizar(texto: str) -> str:
     - colapsa espaços repetidos dentro da linha e remove os das pontas;
     - colapsa três ou mais quebras seguidas em uma linha em branco.
     """
+    texto = corrigir_acentos(texto)
     texto = texto.replace(" ", " ").replace("\t", " ").replace("\r", "\n")
     linhas = [re.sub(r" {2,}", " ", linha).strip() for linha in texto.split("\n")]
     texto = "\n".join(linhas)
@@ -123,17 +175,18 @@ def descobrir_pdfs(cfg: CorpusConfig) -> list[ArquivoAula]:
     return [ArquivoAula(aula=a, caminho=por_aula[a][0]) for a in sorted(por_aula)]
 
 
-def extrair_pdf(arquivo: ArquivoAula, cfg: CorpusConfig) -> list[Pagina]:
-    import fitz  # PyMuPDF; importado aqui para o resto do módulo não depender dele
+def extrair_pdf(arquivo: ArquivoAula, cfg: CorpusConfig) -> tuple[list[Pagina], str | None]:
+    import pymupdf  # importado aqui para o resto do módulo não depender dele
 
     parte, titulo = cfg.catalogo.get(arquivo.aula, (None, None))
     digest = sha256_arquivo(arquivo.caminho)
+    with pymupdf.open(arquivo.caminho) as doc:
+        # sort=True ordena os blocos por posição (cima→baixo, esquerda→direita),
+        # o que reduz texto fora de ordem em slides com colunas.
+        brutos = [normalizar(page.get_text("text", sort=True)) for page in doc]
+    textos, rodape = remover_rodape(brutos)
     paginas: list[Pagina] = []
-    with fitz.open(arquivo.caminho) as doc:
-        for i, page in enumerate(doc, start=1):
-            # sort=True ordena os blocos por posição (cima→baixo, esquerda→direita),
-            # o que reduz texto fora de ordem em slides com colunas.
-            texto = normalizar(page.get_text("text", sort=True))
+    for i, texto in enumerate(textos, start=1):
             n = len(texto)
             if n == 0:
                 suspeita = "sem_texto"
@@ -154,7 +207,7 @@ def extrair_pdf(arquivo: ArquivoAula, cfg: CorpusConfig) -> list[Pagina]:
                     suspeita=suspeita,
                 )
             )
-    return paginas
+    return paginas, rodape
 
 
 def _jsonl(registros: list[dict]) -> str:
@@ -171,7 +224,7 @@ def extrair_corpus(cfg: CorpusConfig = CONFIG.corpus) -> dict:
 
     entradas = []
     for arquivo in arquivos:
-        paginas = extrair_pdf(arquivo, cfg)
+        paginas, rodape = extrair_pdf(arquivo, cfg)
         conteudo = _jsonl([asdict(p) for p in paginas])
         destino = cfg.extraido_dir / f"aula-{arquivo.aula:02d}.jsonl"
         destino.write_text(conteudo, encoding="utf-8")
@@ -186,6 +239,7 @@ def extrair_corpus(cfg: CorpusConfig = CONFIG.corpus) -> dict:
                     for p in paginas
                     if p.suspeita
                 ],
+                "rodape_removido": rodape,
                 "extraido": destino.name,
                 "sha256_extraido": hashlib.sha256(conteudo.encode("utf-8")).hexdigest(),
             }

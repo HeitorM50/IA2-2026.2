@@ -34,9 +34,9 @@ Status em 04/11/2026. "Proposto" = decidido pela dupla, aguardando confirmação
 | --- | --- | --- |
 | Rota temática | proposto | Rota I: comparação de estratégias de *chunking* sob protocolo idêntico, como o exemplo de estratégias de regularização em `docs/guia-artigos.md` |
 | Temática distinta dos artigos 1 e 2 | ok | A1: classificação de imagens; A2: detecção de anomalia em séries; A3: recuperação de texto |
-| Corpus | congelado | aulas 14–23, Partes V–VII, dez PDFs |
+| Corpus | congelado | aulas 14–23, dez PDFs, 482 páginas. Partes inferidas pelo conteúdo (os slides não as numeram): V = 14–17 (PLN/LLMs), VI = 18–20 (RL), VII = 21–23 (XAI/fairness) |
 | Redistribuição dos PDFs | **aberta — confirmar com o professor** | até lá, PDFs e texto extraído fora do Git |
-| Configurações | congelado | 128/256/512 tokens × 0%/20% de sobreposição (`src/config.py`) |
+| Configurações | congelado | linha de base estrutural `slide` (um chunk por slide) + janelas fixas 128/256/512 tokens × 0%/20% de sobreposição = 7 configurações (`src/config.py`) |
 | Métrica principal de recuperação | proposto | Recall@5 (a evidência certa precisa chegar ao gerador); MRR e Precision@k secundárias |
 | Métricas da resposta | proposto | correção, completude, fidelidade, afirmações não sustentadas, abstenção correta |
 | Gerador | **aberta** | modelo aberto local (reprodutível) vs. API versionada |
@@ -66,3 +66,11 @@ Status em 04/11/2026. "Proposto" = decidido pela dupla, aguardando confirmação
   validador do dataset (`src/dataset.py`) e `src/run.py` com retomada e manifesto.
   Falta: `src.indice.construir_recuperador` (#50) e o backend do gerador, que depende
   da escolha local vs. API (#46).
+- 04/11/2026 — PDFs reais extraídos (482 páginas). Dois defeitos sistemáticos dos
+  slides em LaTeX corrigidos no extrator: acentos soltos antes da letra
+  ("Intui¸c˜ao", 553 ocorrências) e rodapé do Beamer repetido em toda página
+  (autor, título, data e contador "n / N"). Sem correção, o rodapé entraria em todo
+  chunk e dominaria a similaridade dos chunks pequenos. Uma página suspeita
+  (21/54, divisor de seção), nenhuma duplicada por overlay.
+- 04/11/2026 — acrescentada a estratégia `slide` como linha de base, para que a
+  comparação seja entre estratégias de segmentação e não só entre valores de tamanho.

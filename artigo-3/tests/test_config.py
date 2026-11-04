@@ -10,8 +10,9 @@ import pytest
 from src.config import CONFIG, PENDENTE, como_dict, pendencias, validar_congelamento
 
 
-def test_grade_tem_as_seis_configuracoes_da_issue():
+def test_grade_tem_linha_de_base_por_slide_e_as_seis_janelas():
     assert CONFIG.chunking.ids == (
+        "slide",
         "c128-o0",
         "c128-o20",
         "c256-o0",
@@ -27,8 +28,15 @@ def test_split_soma_sessenta_itens_e_categorias_batem():
     assert sum(ds.categorias.values()) == 60
 
 
+def test_catalogo_cobre_as_dez_aulas_nas_tres_partes():
+    cat = CONFIG.corpus.catalogo
+    assert sorted(cat) == list(CONFIG.corpus.aulas)
+    assert {parte for parte, _ in cat.values()} == {"V", "VI", "VII"}
+
+
 def test_execucao_canonica_bloqueada_enquanto_ha_pendencia():
     assert "recuperacao.modelo_embedding" in pendencias()
+    assert "corpus.catalogo" not in pendencias()
     with pytest.raises(RuntimeError, match="não congelado"):
         validar_congelamento()
 
