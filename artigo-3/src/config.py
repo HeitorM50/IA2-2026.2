@@ -160,14 +160,22 @@ def set_seed(seed: int) -> None:
     np.random.seed(seed)
 
 
-def como_dict(cfg: ExperimentoConfig = CONFIG) -> dict[str, Any]:
-    """Versão serializável do protocolo, gravada junto de cada resultado."""
+def como_dict(cfg: ExperimentoConfig = CONFIG, *, sem_caminhos: bool = False) -> dict[str, Any]:
+    """Versão serializável do protocolo, gravada junto de cada resultado.
+
+    Com ``sem_caminhos``, remove os caminhos locais: o hash do protocolo precisa
+    ser o mesmo na máquina de cada autor e no Colab.
+    """
 
     def _conv(valor: Any) -> Any:
         if isinstance(valor, Path):
             return str(valor)
         if isinstance(valor, dict):
-            return {str(k): _conv(v) for k, v in valor.items()}
+            return {
+                str(k): _conv(v)
+                for k, v in valor.items()
+                if not (sem_caminhos and isinstance(v, Path))
+            }
         if isinstance(valor, (list, tuple)):
             return [_conv(v) for v in valor]
         return valor
