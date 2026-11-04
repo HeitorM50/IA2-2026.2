@@ -9,5 +9,9 @@ pymupdf>=1.24,<2
 # faiss-cpu>=1.8,<2
 # sentence-transformers>=3,<6
 
+# Gerador (#52): Qwen2.5-3B-Instruct. No Colab o torch já vem instalado.
+transformers>=4.45,<6
+accelerate>=0.34
+
 # Testes locais.
 pytest>=8,<10

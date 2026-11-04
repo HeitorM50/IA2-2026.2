@@ -19,28 +19,38 @@ from dataclasses import asdict, dataclass
 from src.config import CONFIG, GeracaoConfig
 from src.contratos import Gerador, Recuperador, SaidaGerador, Trecho
 
-VERSAO_PROMPT = 1
+# v2 (04/11/2026): os trechos passaram a ser delimitados por tags. Na v1 o
+# cabeçalho "[1] (aula 15, p. 6)" usava o mesmo formato da citação; no ensaio,
+# o modelo copiava o cabeçalho e resumia cada trecho em vez de responder, e o
+# eco era contado como citação válida.
+VERSAO_PROMPT = 2
 
-INSTRUCOES = """Você responde perguntas sobre as aulas de Inteligência Artificial II usando SOMENTE os trechos numerados abaixo.
+INSTRUCOES = """Você responde perguntas sobre as aulas de Inteligência Artificial II usando SOMENTE o conteúdo dos trechos dentro de <contexto>.
 Regras:
 1. Use apenas informação presente nos trechos; não use conhecimento próprio.
-2. Depois de cada afirmação, cite entre colchetes o número do trecho que a sustenta, por exemplo [2].
-3. Se os trechos não forem suficientes para responder, escreva exatamente: "{abstencao}"
-4. Responda em português, de forma direta, em no máximo cinco frases."""
+2. Responda à pergunta diretamente; não resuma nem copie os trechos.
+3. Depois de cada afirmação, cite entre colchetes o id do trecho que a sustenta, por exemplo [2].
+4. Se os trechos não forem suficientes para responder, escreva exatamente e somente: "{abstencao}"
+5. Responda em português, em no máximo cinco frases."""
 
 
 def montar_prompt(pergunta: str, trechos: list[Trecho], cfg: GeracaoConfig = CONFIG.geracao) -> str:
     blocos = [
-        f"[{i}] (aula {t.aula}, p. {t.pagina_inicio}"
-        + (f"–{t.pagina_fim}" if t.pagina_fim != t.pagina_inicio else "")
-        + f")\n{t.texto}"
+        f'<trecho id="{i}" aula="{t.aula}" pagina="{t.pagina_inicio}'
+        + (f"-{t.pagina_fim}" if t.pagina_fim != t.pagina_inicio else "")
+        + f'">\n{t.texto}\n</trecho>'
         for i, t in enumerate(trechos, start=1)
     ]
-    contexto = "\n\n".join(blocos) if blocos else "(nenhum trecho recuperado)"
+    contexto = "\n".join(blocos) if blocos else "(nenhum trecho recuperado)"
     return (
         INSTRUCOES.format(abstencao=cfg.texto_abstencao)
-        + f"\n\nTrechos:\n{contexto}\n\nPergunta: {pergunta}\nResposta:"
+        + f"\n\n<contexto>\n{contexto}\n</contexto>\n\nPergunta: {pergunta}"
     )
+
+
+def _remover_eco_de_contexto(resposta: str) -> str:
+    """Tira tags de trecho copiadas pelo modelo, para não contá-las como citação."""
+    return re.sub(r"</?trecho[^>]*>", " ", resposta)
 
 
 def _sem_acento(texto: str) -> str:
@@ -112,7 +122,7 @@ def responder(
         prompt, temperatura=cfg.temperatura, max_tokens=cfg.max_tokens_resposta
     )
     t2 = time.perf_counter()
-    validas, invalidas = extrair_citacoes(saida.texto, len(trechos))
+    validas, invalidas = extrair_citacoes(_remover_eco_de_contexto(saida.texto), len(trechos))
     return RespostaRAG(
         pergunta_id=pergunta_id,
         config_id=recuperador.config_id,
