@@ -132,8 +132,25 @@ class DatasetConfig:
             "nao_respondivel": 5,
         }
     )
+    categorias_por_split: dict[str, dict[str, int]] = field(
+        default_factory=lambda: {
+            "dev": {
+                "factual": 8,
+                "contextual": 4,
+                "multitrecho": 2,
+                "nao_respondivel": 1,
+            },
+            "test": {
+                "factual": 22,
+                "contextual": 11,
+                "multitrecho": 8,
+                "nao_respondivel": 4,
+            },
+        }
+    )
     doi: str = PENDENTE
-    licenca: str = PENDENTE
+    # A licença cobre as anotações autorais, não os slides de terceiros.
+    licenca: str = "CC BY 4.0"
 
 
 @dataclass(frozen=True)

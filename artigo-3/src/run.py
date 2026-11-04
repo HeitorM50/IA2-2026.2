@@ -185,7 +185,14 @@ def executar(
 
     corpus_sha = verificar_corpus(cfg)
     dataset_path = cfg.dataset.dataset_path
-    itens = ds.carregar(dataset_path, split=split, estrito=canonica)
+    itens = ds.carregar(
+        dataset_path,
+        split=split,
+        estrito=canonica,
+        manifesto_path=cfg.corpus.manifesto_path,
+        cfg=cfg.dataset,
+        corpus=cfg.corpus,
+    )
     if limite is not None:
         itens = itens[:limite]
 
