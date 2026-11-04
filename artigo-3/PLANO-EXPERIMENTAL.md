@@ -11,16 +11,19 @@ não sustentadas em um sistema RAG sobre as aulas 14–23?
 
 ## Variáveis
 
-- **Independente:** configuração de chunking — `c128-o0`, `c128-o20`,
-  `c256-o0`, `c256-o20`, `c512-o0`, `c512-o20`. Tamanho e sobreposição em tokens
-  do tokenizador do modelo de embedding.
+- **Independente:** estratégia de chunking, em duas famílias:
+  - estrutural — `slide`: um chunk por slide, a segmentação natural do material
+    (linha de base sem parâmetro de tamanho);
+  - janela fixa — `c128-o0`, `c128-o20`, `c256-o0`, `c256-o20`, `c512-o0`,
+    `c512-o20`: tamanho e sobreposição em tokens do tokenizador do embedding.
 - **Fixas entre configurações:** corpus extraído (mesmo manifesto), modelo e
   revisão de embedding, índice FAISS `IndexFlatIP` com vetores normalizados,
   `top_k = 5`, gerador, prompt, temperatura 0, conjunto de perguntas.
 
 ## Pipeline
 
-1. `src/corpus.py` — extrai o texto por página com origem e SHA-256 (#48).
+1. `src/corpus.py` — extrai o texto por página com origem e SHA-256, recompõe
+   acentos soltos do LaTeX e remove o rodapé repetido do Beamer (#48).
 2. Chunking por aula, sem atravessar a fronteira entre aulas (#50).
 3. Indexação e busca (#50).
 4. Métricas de recuperação contra `evidencias_validas` (#51).
@@ -33,7 +36,7 @@ não sustentadas em um sistema RAG sobre as aulas 14–23?
 60 itens: 30 factuais, 15 contextuais, 10 multitrecho, 5 não respondíveis.
 Split fixado **antes** de qualquer experimento: 15 `dev`, 45 `test`.
 O `dev` serve para depurar o pipeline e o prompt; o `test` é lido uma única vez,
-na execução canônica (6 × 45 = 270 pares).
+na execução canônica (7 × 45 = 315 pares).
 
 ## Métricas
 

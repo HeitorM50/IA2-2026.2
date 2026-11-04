@@ -1,0 +1,124 @@
+{
+  "arquivos": [
+    {
+      "aula": 14,
+      "extraido": "aula-14.jsonl",
+      "n_paginas": 32,
+      "origem": "Aula 14 de IA II 2026_2.pdf",
+      "paginas_suspeitas": [],
+      "rodape_removido": "Prof. Fabiano A. Soares, Dr. (UnB – FCTE | Inteligência FundamentosArtificial II) de Processamento de Linguagem Natural Maio de 2026",
+      "sha256_extraido": "c18066173b6a609c4c605e60dcd5cb623e90dec84da79203cd01c0bd5ca08984",
+      "sha256_pdf": "0bf22ac0ba93ce11efca4748010a858211bdaac6927224cb9bdf88643cf8ee3c"
+    },
+    {
+      "aula": 15,
+      "extraido": "aula-15.jsonl",
+      "n_paginas": 48,
+      "origem": "Aula 15 de IA II 2026_2.pdf",
+      "paginas_suspeitas": [],
+      "rodape_removido": "Prof. Fabiano A. Soares, Dr. (UnB - FCTE) Transformers - IA II 19 de Maio de 2026",
+      "sha256_extraido": "5c70202677853efae602b5ffbaa46885ac27d87c0d91817d5fd32161dfc70f40",
+      "sha256_pdf": "ca9c1b54779fbd8dbe1c17a4b866ea5de97114db75166f1a1b699d969c920c5f"
+    },
+    {
+      "aula": 16,
+      "extraido": "aula-16.jsonl",
+      "n_paginas": 49,
+      "origem": "Aula 16 de IA II 2026_2.pdf",
+      "paginas_suspeitas": [],
+      "rodape_removido": "Prof. Fabiano A. Soares (UnB – FCTE) LLMs, Embeddings e Fine-tuning Maio de 2026",
+      "sha256_extraido": "a9e13c90d23dccdccf5a63af8864e7a44e64560462f4723cc123328026e55323",
+      "sha256_pdf": "3a9e5625ec8482151e419f2d1451100b28e74cc231981f037a06d9dca1daccda"
+    },
+    {
+      "aula": 17,
+      "extraido": "aula-17.jsonl",
+      "n_paginas": 48,
+      "origem": "Aula 17 de IA II 2026_2.pdf",
+      "paginas_suspeitas": [],
+      "rodape_removido": "Prof. Fabiano A. Soares, Dr. (UnB - FCTE) Prompt Engineering - IA II 2026",
+      "sha256_extraido": "4d0eb00bdc223fab6b20cb0fd895dfdb2341b2dbac5b2941a38eb071b4f6afbf",
+      "sha256_pdf": "79a0cf5cfd6399c5c4776e8d2fd99d04842e23ec2a6d60970bdb02511be0e55f"
+    },
+    {
+      "aula": 18,
+      "extraido": "aula-18.jsonl",
+      "n_paginas": 52,
+      "origem": "Aula 18 de IA II 2026_2.pdf",
+      "paginas_suspeitas": [],
+      "rodape_removido": "Prof. Fabiano A. Soares, Dr. (UnB - FCTE) Fundamentos de RL 2026",
+      "sha256_extraido": "e0afaea805a3a7b4710deed8221ae8c158c395f0011dc2f90fbeeb13a9137e0a",
+      "sha256_pdf": "9b901ad4285e4151050e0edf54438a5b8876af50476eb31685ee36cfc48d9eb9"
+    },
+    {
+      "aula": 19,
+      "extraido": "aula-19.jsonl",
+      "n_paginas": 58,
+      "origem": "Aula 19 de IA II 2026_2.pdf",
+      "paginas_suspeitas": [],
+      "rodape_removido": "Prof. Fabiano A. Soares (UnB - FCTE) Deep RL: DQN 18 de Junho de 2026",
+      "sha256_extraido": "fa5d3a87e531aed883b612dc8310e91d817c5698420a8bea90b2c2d068cee942",
+      "sha256_pdf": "6238db0b981b58edc4d419cdeee4c0ca664caf03c4f638dc86c4225cba7dc4aa"
+    },
+    {
+      "aula": 20,
+      "extraido": "aula-20.jsonl",
+      "n_paginas": 55,
+      "origem": "Aula 20 de IA II 2026_2.pdf",
+      "paginas_suspeitas": [],
+      "rodape_removido": "Prof. Fabiano A. Soares (UnB - FCTE) Policy Gradient e PPO 19 de Maio de 2026",
+      "sha256_extraido": "c2be077dccc038def050e179681ab2f7a89677f402ecc10050b3333415405e8e",
+      "sha256_pdf": "f2b68f70a824b887342102c97d3ab1dc2db16141681c80a9bd254dcbbffa9d10"
+    },
+    {
+      "aula": 21,
+      "extraido": "aula-21.jsonl",
+      "n_paginas": 58,
+      "origem": "Aula 21 de IA II 2026_2.pdf",
+      "paginas_suspeitas": [
+        {
+          "motivo": "texto_curto",
+          "pagina": 54
+        }
+      ],
+      "rodape_removido": "Prof. Fabiano Araujo Soares (UnB - FCTE) Aula 21: Introdução à IA Explicável (XAI) 22 de junho de 2026",
+      "sha256_extraido": "c60b62a4a8c93021f5f22e6d62cea4ec0b32417fe0df7f181faca2ecfc6e536e",
+      "sha256_pdf": "5521be663441682d72e66f9df8c08176223c921aee61696ae55238ed22696ffb"
+    },
+    {
+      "aula": 22,
+      "extraido": "aula-22.jsonl",
+      "n_paginas": 44,
+      "origem": "Aula 22 de IA II 2026_2.pdf",
+      "paginas_suspeitas": [],
+      "rodape_removido": "Fabiano Soares (UnB) IA II - Aula 22 28 de junho de 2026",
+      "sha256_extraido": "27a9fa1fa3b0d20d5466bfd353a82d0053e75ed0672ea6541959377958d91685",
+      "sha256_pdf": "1972b5f0b63578d78b54d87a3b019ae940e4fe8602ff70a6f0dcd01088f7b407"
+    },
+    {
+      "aula": 23,
+      "extraido": "aula-23.jsonl",
+      "n_paginas": 38,
+      "origem": "Aula 23 de IA II 2026_2.pdf",
+      "paginas_suspeitas": [],
+      "rodape_removido": "Fabiano A. Soares (UnB) Fairness e IA Responsável 30 de junho de 2026",
+      "sha256_extraido": "ac3fcd792c3e6ed77bf8721fe81213584bfce058b2d74b3bc138a83f72ab10c0",
+      "sha256_pdf": "745235165aef4c4ff8171114f2af9060fee054a35eedcbf54208b84eb7850b8e"
+    }
+  ],
+  "aulas": [
+    14,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    21,
+    22,
+    23
+  ],
+  "catalogo_completo": true,
+  "min_caracteres_pagina": 40,
+  "versao_extrator": 2
+}

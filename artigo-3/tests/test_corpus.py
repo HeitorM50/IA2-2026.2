@@ -13,7 +13,7 @@ from pathlib import Path
 
 import pytest
 
-fitz = pytest.importorskip("fitz")
+fitz = pytest.importorskip("pymupdf")
 
 from src.config import CorpusConfig
 from src.corpus import (
@@ -21,7 +21,9 @@ from src.corpus import (
     carregar_paginas,
     descobrir_pdfs,
     extrair_corpus,
+    corrigir_acentos,
     normalizar,
+    remover_rodape,
     validar_catalogo,
 )
 
@@ -136,3 +138,23 @@ def test_catalogo_incompleto_fica_registrado(corpus):
     manifesto = extrair_corpus(cfg)
     assert manifesto["catalogo_completo"] is False
     assert json.loads(cfg.manifesto_path.read_text())["catalogo_completo"] is False
+
+
+def test_acentos_soltos_do_latex_sao_recompostos():
+    assert corrigir_acentos("Intui¸c˜ao e conte´udo cr´ıtico, at´e ˆe") == "Intuição e conteúdo crítico, até ê"
+    assert corrigir_acentos("estimador ˆY") == "estimador Ŷ"
+    # sem letra depois, o acento fica como está
+    assert corrigir_acentos("aspas ´ soltas") == "aspas ´ soltas"
+
+
+def test_rodape_repetido_com_contador_e_removido():
+    rodape = "Prof. X (UnB) Transformers 2026"
+    textos = [f"Conteúdo {i}\n{rodape} {i} / 4" for i in range(1, 4)] + ["Capa sem rodapé"]
+    limpos, achado = remover_rodape(textos)
+    assert achado == rodape
+    assert limpos == ["Conteúdo 1", "Conteúdo 2", "Conteúdo 3", "Capa sem rodapé"]
+
+
+def test_sem_rodape_dominante_nada_e_removido():
+    textos = ["a\nfim 1", "b\nfim 2", "c\noutra"]
+    assert remover_rodape(textos) == (textos, None)
