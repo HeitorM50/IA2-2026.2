@@ -32,7 +32,7 @@ Status em 04/11/2026. "Proposto" = decidido pela dupla, aguardando confirmação
 
 | Decisão | Status | Valor |
 | --- | --- | --- |
-| Rota temática | **aberta — confirmar com o professor** | Rota I (comparação de 6 configurações) ou adaptação para Rota III |
+| Rota temática | proposto | Rota I: comparação de estratégias de *chunking* sob protocolo idêntico, como o exemplo de estratégias de regularização em `docs/guia-artigos.md` |
 | Temática distinta dos artigos 1 e 2 | ok | A1: classificação de imagens; A2: detecção de anomalia em séries; A3: recuperação de texto |
 | Corpus | congelado | aulas 14–23, Partes V–VII, dez PDFs |
 | Redistribuição dos PDFs | **aberta — confirmar com o professor** | até lá, PDFs e texto extraído fora do Git |
@@ -47,9 +47,11 @@ Status em 04/11/2026. "Proposto" = decidido pela dupla, aguardando confirmação
 - **Direitos autorais:** os slides são material do professor. Publicar só
   identificadores (aula, página) e trechos curtos de evidência, nunca o texto
   integral extraído, até haver autorização.
-- **Rota:** o plano da disciplina prevê Rota III ou IV para o Artigo 3. Se o
-  professor não aceitar Rota I, a adaptação mais barata é tratar a análise de
-  atribuição do RAG (qual trecho sustentou cada afirmação) como explicabilidade.
+- **Rota:** o plano de ensino não fixa rota por artigo; exige só temática distinta
+  (A1 visão/CNN, A2 séries/RNN, A3 PLN/LLM). A trilha III/IV para o Artigo 3 era
+  planejamento da dupla. O risco real é a grade variar só parâmetros de uma
+  estratégia (tamanho fixo) e ser lida como estudo de sensibilidade; uma linha de
+  base estrutural (um chunk por slide) tornaria a comparação entre estratégias explícita.
 - **Prazo:** com entrega em 05/11, a avaliação humana cega (#52) pode precisar
   ser reduzida a uma amostra; se acontecer, vira limitação declarada.
 
