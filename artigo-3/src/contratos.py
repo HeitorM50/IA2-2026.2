@@ -22,6 +22,8 @@ class Trecho:
     pagina_inicio: int
     pagina_fim: int
     origem: str
+    parte: str | None = None
+    titulo: str | None = None
 
     def como_dict(self) -> dict:
         return asdict(self)

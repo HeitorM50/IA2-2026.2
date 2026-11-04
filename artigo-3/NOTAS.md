@@ -81,3 +81,8 @@ Status em 04/11/2026. "Proposto" = decidido pela dupla, aguardando confirmação
   metadados provisórios de citação e validação contra o manifesto do corpus.
   A redação das perguntas permanece pendente porque os JSONL extraídos não são
   versionados e não estão presentes nesta cópia do workspace.
+- 04/11/2026 — #50: implementados chunking por tokens, baseline por slide,
+  `IndexFlatIP` com normalização L2, busca com metadados e cache auditável por
+  corpus/modelo/configuração. Congelado `intfloat/multilingual-e5-base` na
+  revisão `d128750597153bb5987e10b1c3493a34e5a4502a`, com prefixos E5 para
+  consulta e passagem. O cache local fica fora do Git.
