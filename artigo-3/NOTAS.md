@@ -82,3 +82,10 @@ Status em 04/11/2026. "Proposto" = decidido pela dupla, aguardando confirmação
   corretamente numa pergunta fora do corpus. O 0.5B não citou; conferir com o 3B
   no ensaio `dev` antes da grade. As perguntas do ensaio foram ad hoc, nenhuma do
   dataset.
+- 04/11/2026 — `src/analise_geracao.py` (#52): amostra cega estratificada por
+  categoria, com todas as configurações de cada pergunta sorteada (comparação
+  pareada); métricas automáticas por configuração (abstenção correta/indevida,
+  uso de citação, citação inválida, tokens, latência); e desfechos que separam
+  falha de recuperação de falha de geração. Tamanho da amostra ainda em aberto:
+  a proposta é 10 perguntas × 7 configurações = 70 itens por avaliador, declarada
+  como limitação.

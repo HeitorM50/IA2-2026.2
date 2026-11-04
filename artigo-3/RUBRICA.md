@@ -1,5 +1,14 @@
 # Rubrica da avaliação humana — Artigo 3 (#52)
 
+A planilha e a chave são geradas a partir dos resultados brutos da grade:
+
+```sh
+.venv/bin/python -m src.analise_geracao amostra --split test --n 10
+```
+
+O sorteio é estratificado por categoria e leva todas as configurações de cada
+pergunta sorteada, para que a comparação entre configurações fique pareada.
+
 Cada autor preenche a própria cópia da planilha cega (`data/avaliacao/planilha-cega.csv`)
 **sem abrir** `chave.csv`, sem conversar sobre itens e sem olhar a planilha do outro.
 A planilha não mostra a configuração de chunking; não tente deduzi-la pelo tamanho dos trechos.
@@ -44,3 +53,10 @@ Depois das duas avaliações:
 O kappa de Cohen com pesos quadráticos (por critério) vai para o artigo **antes** do
 consenso. Os itens divergentes são discutidos e a nota de consenso é a que entra nas
 métricas de resposta.
+
+Com o consenso em `data/avaliacao/consenso.csv` (mesmo formato da planilha):
+
+```sh
+.venv/bin/python -m src.analise_geracao desfechos --split test --consenso data/avaliacao/consenso.csv
+.venv/bin/python -m src.analise_geracao automaticas --split test
+```
