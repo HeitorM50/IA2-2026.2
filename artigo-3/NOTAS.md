@@ -37,7 +37,7 @@ Status em 04/11/2026. "Proposto" = decidido pela dupla, aguardando confirmação
 | Corpus | congelado | aulas 14–23, dez PDFs, 482 páginas. Partes inferidas pelo conteúdo (os slides não as numeram): V = 14–17 (PLN/LLMs), VI = 18–20 (RL), VII = 21–23 (XAI/fairness) |
 | Redistribuição dos PDFs | **aberta — confirmar com o professor** | até lá, PDFs e texto extraído fora do Git |
 | Configurações | congelado | linha de base estrutural `slide` (um chunk por slide) + janelas fixas 128/256/512 tokens × 0%/20% de sobreposição = 7 configurações (`src/config.py`) |
-| Métrica principal de recuperação | proposto | Recall@5 (a evidência certa precisa chegar ao gerador); MRR e Precision@k secundárias |
+| Métrica principal de recuperação | congelado | Recall@k; um k global entre 1/3/5 é escolhido só em dev por maior Recall médio, com desempate pelo menor k; MRR@5 e Precision@k secundárias |
 | Métricas da resposta | proposto | correção, completude, fidelidade, afirmações não sustentadas, abstenção correta |
 | Gerador | **aberta** | modelo aberto local (reprodutível) vs. API versionada |
 | Publicação do dataset | proposto | Zenodo com DOI, licença CC BY 4.0, só perguntas/respostas/referência à página — sem texto integral dos slides |
@@ -86,3 +86,7 @@ Status em 04/11/2026. "Proposto" = decidido pela dupla, aguardando confirmação
   corpus/modelo/configuração. Congelado `intfloat/multilingual-e5-base` na
   revisão `d128750597153bb5987e10b1c3493a34e5a4502a`, com prefixos E5 para
   consulta e passagem. O cache local fica fora do Git.
+- 04/11/2026 — #51: implementados rankings auditáveis, Recall/Precision@1/3/5,
+  MRR@5, cobertura multitrecho, redundância por IoU de tokens, latência e
+  agregações geral/V/VI/VII. A seleção global de `top-k` usa somente `dev` e
+  passa a ser uma dependência obrigatória da execução canônica de `test`.

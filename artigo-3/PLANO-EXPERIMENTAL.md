@@ -18,7 +18,8 @@ não sustentadas em um sistema RAG sobre as aulas 14–23?
     `c512-o20`: tamanho e sobreposição em tokens do tokenizador do embedding.
 - **Fixas entre configurações:** corpus extraído (mesmo manifesto), modelo e
   revisão de embedding, índice FAISS `IndexFlatIP` com vetores normalizados,
-  `top_k = 5`, gerador, prompt, temperatura 0, conjunto de perguntas.
+  um único `top-k` selecionado em desenvolvimento, gerador, prompt, temperatura
+  0 e conjunto de perguntas. Os candidatos de `top-k` são 1, 3 e 5.
 
 O embedding foi congelado como `intfloat/multilingual-e5-base`, revisão
 `d128750597153bb5987e10b1c3493a34e5a4502a`. A segmentação usa o tokenizador da
@@ -31,10 +32,13 @@ chunks e `query: ` para perguntas.
    acentos soltos do LaTeX e remove o rodapé repetido do Beamer (#48).
 2. Chunking por aula, sem atravessar a fronteira entre aulas (#50).
 3. Indexação e busca (#50).
-4. Métricas de recuperação contra `evidencias_validas` (#51).
-5. Geração restrita ao contexto, com abstenção obrigatória (#52).
-6. `src/run.py` orquestra a grade e grava um JSON por configuração × pergunta (#53).
-7. `src/report.py` consolida e emite as macros do artigo (#54).
+4. Coleta dos rankings de desenvolvimento até a posição 5 e métricas de
+   recuperação contra `evidencias_validas` (#51).
+5. Seleção de um `top-k` global pelo maior Recall médio em `dev`, com desempate
+   pelo menor `k`; o artefato dessa decisão é obrigatório antes de abrir `test`.
+6. Geração restrita ao contexto, com abstenção obrigatória (#52).
+7. `src/run.py` orquestra a grade e grava um JSON por configuração × pergunta (#53).
+8. `src/report.py` consolida e emite as macros do artigo (#54).
 
 Os índices são cacheados por hash do corpus, do fluxo canônico de páginas, do
 modelo, da revisão e da configuração. Cada cache registra número de chunks,
@@ -57,8 +61,9 @@ não sustentada, abstenção e revisão cruzada estão em
 
 | Nível | Métrica | Papel | Justificativa |
 | --- | --- | --- | --- |
-| Recuperação | Recall@5 | principal | mede se a evidência chega ao gerador; é o que limita a resposta |
-| Recuperação | MRR, Precision@k (k = 1, 3, 5) | secundárias | ordem do acerto e diluição do contexto por chunks grandes |
+| Recuperação | Recall@k selecionado | principal | fração das páginas-evidência distintas presentes no contexto do gerador |
+| Recuperação | MRR@5, Precision@k (k = 1, 3, 5) | secundárias | primeira posição relevante e proporção de chunks relevantes |
+| Recuperação | redundância e latência | diagnóstico | IoU médio dos intervalos de tokens; média, mediana e p95 da busca |
 | Resposta | correção, completude, fidelidade | principais da geração | rubrica humana cega à configuração |
 | Resposta | afirmações não sustentadas | alucinação | só conta afirmação sem apoio no contexto; paráfrase correta não é alucinação |
 | Resposta | abstenção correta | perguntas não respondíveis | distingue "não sabe" de "inventa" |
@@ -66,9 +71,28 @@ não sustentada, abstenção e revisão cruzada estão em
 Falha de recuperação (evidência fora do top-k) e falha de geração (evidência
 recuperada, resposta errada) são reportadas separadamente.
 
+Em itens multitrecho, Recall@k é a fração das evidências obrigatórias cobertas;
+o relatório também indica quando todas foram recuperadas. MRR@5 vale zero se
+nenhuma evidência aparece nas cinco posições. Precision@k usa `k` como
+denominador e considera cada chunk relevante individualmente. Perguntas não
+respondíveis ficam fora dessas quatro métricas e da seleção de `top-k`, mas
+permanecem nas medidas de latência e redundância. Todos os agregados são
+produzidos por configuração, no conjunto geral e nas Partes V, VI e VII.
+
+Fluxo operacional:
+
+```sh
+python -m src.avaliacao_recuperacao avaliar --split dev
+python -m src.avaliacao_recuperacao selecionar-k --avaliacao-dir src/results/retrieval/dev
+python -m src.avaliacao_recuperacao avaliar --split test --selecao-top-k src/results/retrieval/dev/top-k-selection.json
+python -m src.run --split test --selecao-top-k src/results/retrieval/dev/top-k-selection.json
+```
+
 ## Reprodutibilidade
 
 - Execução canônica a partir de um SHA destacado, Git limpo, manifestos de corpus
   e dataset conferidos (`run.py` aborta se divergirem).
+- `test` exige `top-k-selection.json`, ligado por hash ao split `dev`, ao
+  protocolo, ao corpus, aos sete índices e aos rankings que originaram a escolha.
 - `config.validar_congelamento()` impede a grade enquanto houver campo `PENDENTE`.
 - Ambiente congelado em `requirements-lock.txt`; Colab em `COLAB.md`.
