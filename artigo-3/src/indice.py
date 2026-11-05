@@ -10,6 +10,7 @@ import tempfile
 import time
 import uuid
 from dataclasses import dataclass
+from functools import lru_cache
 from pathlib import Path
 from typing import Any, Protocol, Sequence
 
@@ -264,6 +265,17 @@ def _publicar_cache(temporario: Path, destino: Path) -> None:
         os.replace(temporario, destino)
 
 
+@lru_cache(maxsize=1)
+def codificador_padrao(cfg_recuperacao) -> "CodificadorSentenceTransformers":
+    """Carrega o modelo de embedding uma vez por processo.
+
+    `run.py` e `avaliacao_recuperacao.py` chamam `construir_recuperador` uma vez
+    por configuração; sem isto o E5 seria carregado sete vezes, disputando a
+    memória da T4 com o gerador.
+    """
+    return CodificadorSentenceTransformers(cfg_recuperacao)
+
+
 def construir_recuperador(
     config_id: str,
     *,
@@ -280,7 +292,7 @@ def construir_recuperador(
     paginas = list(carregar_paginas(cfg.corpus) if paginas is None else paginas)
     if not paginas:
         raise IndiceError("corpus extraído vazio; execute `python -m src.corpus`")
-    codificador = codificador or CodificadorSentenceTransformers(cfg.recuperacao)
+    codificador = codificador or codificador_padrao(cfg.recuperacao)
     _validar_backend(codificador, cfg)
     faiss_mod = faiss_mod or _modulo_faiss()
     cache_key = chave_cache(config_id, paginas, cfg)
