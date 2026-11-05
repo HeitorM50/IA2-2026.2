@@ -26,7 +26,9 @@ from __future__ import annotations
 import csv
 import json
 import random
+import re
 import sys
+import unicodedata
 from collections import defaultdict
 from pathlib import Path
 from statistics import fmean
@@ -128,6 +130,61 @@ def por_config_recuperacao(rankings: list[dict]) -> dict[str, dict[str, dict[str
         saida[c]["recall5"][q] = m["recall_at_k"]["5"]
         saida[c]["mrr5"][q] = m["mrr_at_5"]
         saida[c]["precision5"][q] = m["precision_at_k"]["5"]
+        if r.get("categoria") == "multitrecho":
+            saida[c]["todas5_multi"][q] = float(m["todas_evidencias_at_k"]["5"])
+    return saida
+
+
+# Palavras vazias frequentes do português; removidas antes do F1 de tokens.
+PALAVRAS_VAZIAS = set(
+    "a o as os um uma uns umas de do da dos das em no na nos nas por pelo pela pelos pelas para "
+    "com sem e ou que se ao aos a as e nao mais como mas sua seu suas seus ele ela eles elas isso "
+    "esse essa este esta entre sobre ate quando ja tambem so pode podem ser sao foi ha".split()
+)
+
+
+def tokens_normalizados(texto: str) -> list[str]:
+    """Minúsculas, sem acento, sem marcadores de citação e sem palavras vazias."""
+    texto = re.sub(r"\[\d+(?:\s*[,;]\s*\d+)*\]", " ", texto)
+    texto = unicodedata.normalize("NFKD", texto.lower())
+    texto = "".join(ch for ch in texto if not unicodedata.combining(ch))
+    return [t for t in re.findall(r"[a-z0-9]+", texto) if t not in PALAVRAS_VAZIAS]
+
+
+def f1_tokens(resposta: str, referencia: str) -> float:
+    """F1 de sobreposição de tokens, como no SQuAD, sobre os tokens normalizados."""
+    from collections import Counter
+
+    r, g = Counter(tokens_normalizados(resposta)), Counter(tokens_normalizados(referencia))
+    comum = sum((r & g).values())
+    if comum == 0:
+        return 0.0
+    precisao, revocacao = comum / sum(r.values()), comum / sum(g.values())
+    return 2 * precisao * revocacao / (precisao + revocacao)
+
+
+def _trecho_relevante(trecho: dict, evidencias: set[tuple[int, int]]) -> bool:
+    return any((trecho["aula"], p) in evidencias for p in range(trecho["pagina_inicio"], trecho["pagina_fim"] + 1))
+
+
+def por_config_geracao(brutos: list[dict], referencias: dict[str, str]) -> dict[str, dict[str, dict[str, float]]]:
+    """{config: {métrica: {pergunta: valor}}} nas respondíveis.
+
+    - ``f1``: F1 de tokens entre resposta e referência (abstenção vale o que der, ≈ 0);
+    - ``precisao_citacao``: fração dos trechos citados que contêm uma página-evidência,
+      só nas respostas com ao menos uma citação válida.
+    """
+    saida: dict[str, dict[str, dict[str, float]]] = defaultdict(lambda: defaultdict(dict))
+    for b in brutos:
+        if not b["respondivel"]:
+            continue
+        c, q = b["config_id"], b["pergunta_id"]
+        saida[c]["f1"][q] = f1_tokens(b["resposta"], referencias[q])
+        if b["citacoes"] and not b["abstencao"]:
+            ev = {(int(a), int(p)) for a, p in b["evidencias_validas"]}
+            citados = [b["trechos"][i - 1] for i in b["citacoes"] if 1 <= i <= len(b["trechos"])]
+            if citados:
+                saida[c]["precisao_citacao"][q] = fmean(_trecho_relevante(t, ev) for t in citados)
     return saida
 
 
@@ -210,11 +267,13 @@ def gerar(
     juizes: dict[str, dict[str, dict]] | None = None,
     chave: dict[str, tuple[str, str]] | None = None,
     *,
+    referencias: dict[str, str] | None = None,
     n_bootstrap: int = N_BOOTSTRAP,
 ) -> tuple[list[dict], list[str], str]:
     """Devolve (linhas do resumo, macros, tabela LaTeX)."""
     rec = por_config_recuperacao(rankings)
     ger = resumo_geracao(brutos)
+    gpq = por_config_geracao(brutos, referencias) if referencias else {}
     configs = [c for c in CONFIG.chunking.ids if c in rec]
     if set(configs) != set(ger):
         raise ReportError(f"recuperação {sorted(rec)} e geração {sorted(ger)} cobrem configurações diferentes")
@@ -249,6 +308,19 @@ def gerar(
                     macro(f"Dif{nome}{s}", fmt(d)),
                     macro(f"Dif{nome}{s}IC", f"\\mbox{{[{fmt(dlo)}; {fmt(dhi)}]}}"),
                 ]
+        if rec[c].get("todas5_multi"):
+            v = fmean(rec[c]["todas5_multi"].values())
+            linha["todas5_multi"] = v
+            macros.append(macro(f"TodasMulti{s}", fmt(v)))
+        for met, nome in (("f1", "FUm"), ("precisao_citacao", "PrecCitacao")):
+            if c in gpq and gpq[c].get(met):
+                vals = list(gpq[c][met].values())
+                lo, hi = bootstrap_ic(vals, n=n_bootstrap)
+                linha |= {met: fmean(vals), f"{met}_ic_inf": lo, f"{met}_ic_sup": hi}
+                macros += [macro(f"{nome}{s}", fmt(fmean(vals))), macro(f"{nome}{s}IC", f"\\mbox{{[{fmt(lo)}; {fmt(hi)}]}}")]
+                if c != LINHA_DE_BASE:
+                    d, dlo, dhi = bootstrap_diferenca(gpq[c][met], gpq[LINHA_DE_BASE][met], n=n_bootstrap)
+                    macros += [macro(f"Dif{nome}{s}", fmt(d)), macro(f"Dif{nome}{s}IC", f"\\mbox{{[{fmt(dlo)}; {fmt(dhi)}]}}")]
         g = ger[c]
         linha |= g
         macros += [
@@ -266,6 +338,7 @@ def gerar(
                 if r["config_id"] == c and r["respondivel"] and r.get("parte") == parte and r["split"] == "test"
             ]
             if vals:
+                linha[f"recall5_parte_{parte}"] = fmean(vals)
                 macros.append(macro(f"RecallCinco{s}Parte{parte}", fmt(fmean(vals))))
         if qual:
             q = qual[c]
@@ -289,6 +362,8 @@ def gerar(
         (_, j1), (_, j2) = sorted(juizes.items())
         consenso = {i: {k: min(j1[i][k], j2[i][k]) for k in j1[i]} for i in chave}
         por_cfg = desfechos(brutos, consenso, chave)
+        for l in linhas:
+            l |= {f"desfecho_{d}": n for d, n in por_cfg[l["config_id"]].items()}
         total = {d: sum(v[d] for v in por_cfg.values()) for d in next(iter(por_cfg.values()))}
         nomes = {"acerto": "Acerto", "falha_geracao": "FalhaGeracao", "falha_recuperacao": "FalhaRecuperacao",
                  "acerto_sem_evidencia": "AcertoSemEvidencia", "abstencao_correta": "AbstencaoCorretaAmostra",
@@ -303,30 +378,55 @@ def gerar(
         macro("MelhorMRRConfig", ROTULO[melhor_mrr["config_id"]]),
         macro("MelhorRecallCincoConfig", ROTULO[melhor_r5["config_id"]]),
     ]
+    if gpq:
+        n_cit = sum(len(gpq[c].get("precisao_citacao", {})) for c in gpq)
+        macros.append(macro("NRespostasComCitacao", str(n_cit)))
     return linhas, macros, tabela_latex(linhas, com_juizes=bool(qual))
 
 
 def tabela_latex(linhas: list[dict], *, com_juizes: bool) -> str:
-    cab = ["Config.", "R@1", "R@5", "MRR@5", "Cit.", "Tok.", "Lat. (s)"]
+    """Tabela larga (duas colunas), agrupada em recuperação, resposta e custo."""
+    def tem(m):
+        return all(m in l for l in linhas)
+
+    rec = [("recall1", "R@1"), ("recall5", "R@5"), ("mrr5", "MRR@5"), ("precision5", "P@5")]
+    if tem("todas5_multi"):
+        rec.append(("todas5_multi", "Multi@5"))
+    resp = [("com_citacao", "Cit.")]
+    resp += [(m, n) for m, n in (("precisao_citacao", "Prec. cit."), ("f1", "F1")) if tem(m)]
     if com_juizes:
-        cab += ["Corr.", "Fid."]
-    melhor = {m: max(l[m] for l in linhas) for m in ("recall1", "recall5", "mrr5")}
+        resp += [("juiz_correcao", "Corr."), ("juiz_fidelidade", "Fid.")]
+    custo = [("tokens_entrada", "Tok."), ("latencia_geracao", "Lat. (s)")]
+    maior_melhor = {m for m, _ in rec + resp}
+    melhor = {m: max(l[m] for l in linhas) for m in maior_melhor}
+    melhor |= {m: min(l[m] for l in linhas) for m, _ in custo}
 
     def cel(l, m):
-        v = fmt(l[m])
+        if m == "com_citacao":
+            v = fmt_pct(l[m])
+        elif m == "tokens_entrada":
+            v = f"{l[m]:.0f}"
+        elif m == "latencia_geracao":
+            v = fmt(l[m], 1)
+        else:
+            v = fmt(l[m])
         return f"\\textbf{{{v}}}" if l[m] == melhor[m] else v
 
-    corpo = []
-    for l in linhas:
-        c = [ROTULO[l["config_id"]], cel(l, "recall1"), cel(l, "recall5"), cel(l, "mrr5"),
-             fmt_pct(l["com_citacao"]), f"{l['tokens_entrada']:.0f}", fmt(l["latencia_geracao"], 1)]
-        if com_juizes:
-            c += [fmt(l["juiz_correcao"]), fmt(l["juiz_fidelidade"])]
-        corpo.append(" & ".join(c) + " \\\\")
+    grupos = [("Recuperação", rec), ("Resposta", resp), ("Custo", custo)]
+    cols = [m for _, g in grupos for m, _ in g]
+    topo, regras, inicio = ["Config."], [], 2
+    for nome, g in grupos:
+        topo.append(f"\\multicolumn{{{len(g)}}}{{c}}{{{nome}}}")
+        regras.append(f"\\cmidrule(lr){{{inicio}-{inicio + len(g) - 1}}}")
+        inicio += len(g)
+    cab = [""] + [n for _, g in grupos for _, n in g]
+    corpo = [" & ".join([ROTULO[l["config_id"]], *(cel(l, m) for m in cols)]) + " \\\\" for l in linhas]
     return "\n".join([
         "% Gerado por src/report.py — não editar à mão.",
-        "\\begin{tabular}{l" + "r" * (len(cab) - 1) + "}",
+        "\\begin{tabular}{l" + "r" * len(cols) + "}",
         "\\toprule",
+        " & ".join(topo) + " \\\\",
+        " ".join(regras),
         " & ".join(cab) + " \\\\",
         "\\midrule",
         *corpo,
@@ -360,7 +460,73 @@ def figura(linhas: list[dict], destino: Path) -> None:
     ax.grid(alpha=0.3, lw=0.4)
     fig.tight_layout()
     destino.parent.mkdir(parents=True, exist_ok=True)
-    fig.savefig(destino)
+    fig.savefig(destino, bbox_inches="tight", pad_inches=0.02)
+    plt.close(fig)
+
+
+def figura_partes(linhas: list[dict], destino: Path) -> None:
+    """Mapa de calor do Recall@5 por parte do curso e configuração."""
+    import matplotlib
+
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    partes = ("V", "VI", "VII")
+    nomes = {"V": "V: PLN e LLMs", "VI": "VI: Aprend. por reforço", "VII": "VII: XAI e equidade"}
+    dados = [[l[f"recall5_parte_{p}"] for l in linhas] for p in partes]
+    fig, ax = plt.subplots(figsize=(3.4, 1.55))
+    im = ax.imshow(dados, cmap="Blues", vmin=0.6, vmax=1.0, aspect="auto")
+    for i, linha in enumerate(dados):
+        for j, v in enumerate(linha):
+            ax.text(j, i, f"{v:.2f}".replace(".", ","), ha="center", va="center", fontsize=6,
+                    color="white" if v > 0.85 else "black")
+    ax.set_xticks(range(len(linhas)), [ROTULO[l["config_id"]].replace("\\%", "%") for l in linhas],
+                  fontsize=5.5, rotation=30, ha="right")
+    ax.set_yticks(range(len(partes)), [nomes[p] for p in partes], fontsize=6)
+    cb = fig.colorbar(im, ax=ax, fraction=0.04, pad=0.02)
+    cb.ax.tick_params(labelsize=5)
+    cb.set_label("Recall@5", fontsize=6)
+    fig.tight_layout()
+    destino.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(destino, bbox_inches="tight", pad_inches=0.02)
+    plt.close(fig)
+
+
+DESFECHOS_FIG = (
+    ("desfecho_acerto", "Acerto", "#2b8a3e"),
+    ("desfecho_falha_geracao", "Falha de geração", "#e8590c"),
+    ("desfecho_falha_recuperacao", "Falha de recuperação", "#c92a2a"),
+    ("desfecho_abstencao_correta", "Abstenção correta", "#868e96"),
+)
+
+
+def figura_desfechos(linhas: list[dict], destino: Path) -> None:
+    """Barras empilhadas dos desfechos da amostra julgada, por configuração."""
+    import matplotlib
+
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    fig, ax = plt.subplots(figsize=(3.4, 1.75))
+    x = range(len(linhas))
+    base = [0] * len(linhas)
+    for chave, rotulo, cor in DESFECHOS_FIG:
+        vals = [l.get(chave, 0) for l in linhas]
+        ax.bar(x, vals, bottom=base, color=cor, label=rotulo, width=0.7)
+        base = [b + v for b, v in zip(base, vals)]
+    ax.set_xticks(list(x), [ROTULO[l["config_id"]].replace("\\%", "%") for l in linhas], fontsize=5.5,
+                  rotation=30, ha="right")
+    from matplotlib.ticker import MaxNLocator
+
+    ax.yaxis.set_major_locator(MaxNLocator(integer=True))
+    ax.set_ylabel("Itens", fontsize=6)
+    ax.tick_params(axis="y", labelsize=5.5)
+    ax.grid(axis="y", alpha=0.3, lw=0.4)
+    fig.legend(*ax.get_legend_handles_labels(), fontsize=5, ncol=4, loc="upper center",
+               bbox_to_anchor=(0.5, 1.0), frameon=False, handlelength=1, columnspacing=0.8)
+    fig.tight_layout(rect=(0, 0, 1, 0.9))
+    destino.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(destino, bbox_inches="tight", pad_inches=0.02)
     plt.close(fig)
 
 
@@ -402,10 +568,16 @@ def main() -> int:
         brutos = carregar_geracao(RESULTADOS / "raw" / "test")
         juizes = carregar_juizes(AVALIACAO)
         chave = ler_chave(AVALIACAO / "chave.csv") if juizes else None
-        linhas, macros, tabela = gerar(rankings, brutos, juizes or None, chave)
+        from src.dataset import carregar
+
+        referencias = {it.id: it.resposta_referencia for it in carregar(split="test") if it.respondivel}
+        linhas, macros, tabela = gerar(rankings, brutos, juizes or None, chave, referencias=referencias)
         macros += macros_protocolo()
         escrever(linhas, macros, tabela, resultados=RESULTADOS, paper=PAPER)
         figura(linhas, PAPER / "figs" / "compromisso.pdf")
+        figura_partes(linhas, PAPER / "figs" / "recall-partes.pdf")
+        if juizes:
+            figura_desfechos(linhas, PAPER / "figs" / "desfechos.pdf")
     except ReportError as e:
         print(f"erro: {e}", file=sys.stderr)
         return 1

@@ -56,7 +56,8 @@ A segmentação do texto em trechos (\textit{chunks}) é uma decisão de projeto
 Este trabalho compara sete estratégias de segmentação sobre os slides de \NAulasCorpus{} aulas de Inteligência Artificial em português: um trecho por slide, como linha de base estrutural, e janelas de 128, 256 e 512 tokens com e sem 20\,\% de sobreposição.
 Com o modelo de \textit{embedding}, o índice, o gerador e o \textit{prompt} fixos, \NPares{} pares configuração--pergunta foram avaliados sobre um conjunto de \NPerguntasTeste{} perguntas de teste publicado com DOI.
 A segmentação por slide obteve o maior MRR@5 (\MRRSlide), enquanto a janela de 512 tokens obteve o maior Recall@5 (\RecallCincoCGrdSem) ao custo de cerca de três vezes mais tokens de contexto e quase o dobro da latência de geração.
-Nenhuma diferença pareada contra a linha de base teve intervalo de confiança de 95\,\% afastado de zero, e todas as configurações se abstiveram corretamente nas perguntas sem resposta no material.
+Nas métricas de recuperação, nenhuma diferença pareada contra a linha de base teve intervalo de confiança de 95\,\% afastado de zero; a exceção foi a precisão das citações, que caiu de \PrecCitacaoSlide{} para \PrecCitacaoCGrdSem{} com trechos de 512 tokens.
+Todas as configurações se abstiveram corretamente nas perguntas sem resposta no material.
 Em uma amostra julgada por dois modelos de linguagem, as falhas de geração superaram as de recuperação, o que sugere que, neste corpus, a segmentação estrutural basta e o gargalo está no gerador.
 \end{abstract}
 
@@ -119,7 +120,9 @@ O \textit{prompt} delimita cada trecho por marcação com identificador, exige q
 A métrica principal de recuperação é o Recall@$k$, a fração das páginas-evidência presentes entre os $k$ trechos entregues ao gerador, porque uma evidência ausente do contexto não pode sustentar a resposta.
 O MRR@5 complementa o Recall por medir a posição da primeira evidência, relevante porque o gerador usa pior o que não está no início do contexto~\cite{liu2024lost}.
 Um trecho é relevante quando seu intervalo de páginas contém uma página-evidência, e perguntas sem resposta ficam fora dessas métricas.
+Também foram medidas a Precision@5 e, nas perguntas que exigem múltiplos trechos, a fração com todas as evidências no top-5 (Multi@5).
 Na geração, mediram-se a abstenção correta nas perguntas sem resposta, a fração de respostas com citação, os tokens de contexto e a latência, que compõem o custo de cada configuração.
+Duas métricas automáticas cobrem todas as \NPares{} respostas: a precisão de citação, fração dos trechos citados que contêm uma página-evidência, que mede se a resposta aponta para a fonte certa; e o F1 de tokens contra a resposta de referência, após remoção de acentos, citações e palavras vazias, um indicador grosseiro de correção que penaliza paráfrases.
 
 A qualidade da resposta foi avaliada em uma amostra de \NPerguntasAmostra{} perguntas de teste, sorteadas com estratificação por categoria, sob as sete configurações (\NItensJuizes{} itens).
 Por falta de tempo para a avaliação humana prevista, os itens foram julgados por dois modelos de linguagem independentes (Claude Opus e Claude Sonnet), sem acesso à configuração, com uma rubrica de correção, completude e fidelidade de 0 a 2 e contagem de afirmações sem apoio no contexto.
@@ -132,14 +135,13 @@ O código, os manifestos com SHA-256 e o \textit{commit} da execução estão em
 \section{Resultados}
 A Tabela~\ref{tab:principal} resume as \NConfiguracoes{} configurações no teste.
 
-\begin{table}[!t]
+\begin{table*}[!t]
 \centering
-\caption{Recuperação, custo e qualidade no teste. R@$k$ e MRR@5 sobre \NRespondiveisTeste{} perguntas respondíveis; Cit.: respostas com citação; Tok.: tokens de contexto por pergunta; Lat.: latência de geração; Corr. e Fid.: correção e fidelidade médias dos juízes, normalizadas em $[0, 1]$, sobre \NPerguntasAmostra{} perguntas.}
+\caption{Recuperação, qualidade da resposta e custo no teste, por configuração (tamanho em tokens / sobreposição). Recuperação, Prec. cit. e F1 sobre \NRespondiveisTeste{} perguntas respondíveis; Multi@5: perguntas de múltiplos trechos com todas as evidências no top-5; Cit.: respostas com citação; Prec. cit.: trechos citados que contêm evidência; Corr. e Fid.: correção e fidelidade médias dos juízes em $[0, 1]$, sobre \NPerguntasAmostra{} perguntas; Tok.: tokens de contexto por pergunta; Lat.: latência de geração. Em negrito, o melhor valor de cada coluna.}
 \label{tab:principal}
-\footnotesize
-\setlength{\tabcolsep}{2.5pt}
+\small
 \input{tabela-principal.tex}
-\end{table}
+\end{table*}
 
 A segmentação por slide teve o maior R@1 (\RecallUmSlide) e o maior MRR@5 (\MRRSlide, IC \MRRSlideIC), e a janela de 512 tokens sem sobreposição teve o maior Recall@5 (\RecallCincoCGrdSem).
 As diferenças pareadas contra a linha de base foram pequenas diante da incerteza: a janela de 512 tokens ficou \DifRecallCincoCGrdSem{} acima em Recall@5 (IC \DifRecallCincoCGrdSemIC) e \DifMRRCGrdSem{} em MRR@5 (IC \DifMRRCGrdSemIC).
@@ -154,26 +156,43 @@ O custo, por outro lado, separa as configurações com clareza: a janela de 512 
 
 Todas as configurações se abstiveram nas \NNaoRespondiveisTeste{} perguntas sem resposta (\AbstencaoCorretaSlide) e nenhuma citou trecho inexistente.
 A fração de respostas com citação caiu para \ComCitacaoCGrdCom{} na janela de 512 tokens com sobreposição, contra \ComCitacaoSlide{} na segmentação por slide.
-Por parte do curso, a maior diferença ocorreu em explicabilidade e equidade (Parte VII), onde o Recall@5 foi \RecallCincoSlideParteVII{} com slides e \RecallCincoCMedComParteVII{} com janelas de 256 tokens com sobreposição.
+A precisão de citação separou as configurações com mais clareza: entre \NRespostasComCitacao{} respostas com citação, ela foi \PrecCitacaoSlide{} (IC \PrecCitacaoSlideIC) com slides e \PrecCitacaoCGrdSem{} (IC \PrecCitacaoCGrdSemIC) com janelas de 512 tokens sem sobreposição, uma diferença pareada de \DifPrecCitacaoCGrdSem{} (IC \DifPrecCitacaoCGrdSemIC), a única cujo intervalo exclui zero.
+O F1 de tokens ficou entre \FUmCGrdCom{} e \FUmSlide{} em todas as configurações, sem diferença relevante contra a linha de base (por exemplo, \DifFUmCGrdSem{}, IC \DifFUmCGrdSemIC, para 512 tokens).
+Por parte do curso (Fig.~\ref{fig:partes}), a maior diferença ocorreu em explicabilidade e equidade (Parte VII), onde o Recall@5 foi \RecallCincoSlideParteVII{} com slides e \RecallCincoCMedComParteVII{} com janelas de 256 tokens com sobreposição; nas Partes V e VI, todas as configurações ficaram próximas do teto.
+Nas perguntas de múltiplos trechos, a cobertura completa das evidências subiu de \TodasMultiSlide{} com slides para \TodasMultiCGrdSem{} com as janelas, sobre apenas oito perguntas.
+
+\begin{figure}[!t]
+\centering
+\includegraphics[width=\columnwidth]{recall-partes.pdf}
+\caption{Recall@5 por parte do curso e configuração. As janelas com sobreposição ou de 512 tokens recuperam melhor as evidências de explicabilidade e equidade (Parte VII).}
+\label{fig:partes}
+\end{figure}
 
 Os juízes concordaram com kappa ponderado de \KappaCorrecao{} em correção e \KappaFidelidade{} em fidelidade, e as médias de correção variaram de \CorrecaoCGrdSem{} a \CorrecaoSlide{} entre configurações.
-Dos \NItensRespondiveisAmostra{} itens respondíveis da amostra, \NAcerto{} foram acertos, \NFalhaGeracao{} falhas de geração e \NFalhaRecuperacao{} falhas de recuperação, e nenhuma resposta foi inventada para pergunta sem resposta.
+Dos \NItensRespondiveisAmostra{} itens respondíveis da amostra, \NAcerto{} foram acertos, \NFalhaGeracao{} falhas de geração e \NFalhaRecuperacao{} falhas de recuperação, e nenhuma resposta foi inventada para pergunta sem resposta (Fig.~\ref{fig:desfechos}).
+
+\begin{figure}[!t]
+\centering
+\includegraphics[width=\columnwidth]{desfechos.pdf}
+\caption{Desfechos da amostra julgada (\NPerguntasAmostra{} perguntas por configuração), com a menor nota dos dois juízes. As falhas de geração predominam sobre as de recuperação em todas as configurações.}
+\label{fig:desfechos}
+\end{figure}
 
 \section{Discussão e Limitações}
 A vantagem da segmentação por slide na ordenação é coerente com o material: cada slide condensa um conceito, e as perguntas factuais têm, por construção do conjunto, a resposta em uma única página, de modo que o trecho estrutural casa semanticamente com a pergunta.
 As janelas maiores ganham Recall@5 porque cada trecho cobre várias páginas e conta como relevante se qualquer uma delas for evidência, o que também explica a menor precisão e o custo maior.
 Na Parte VII, uma explicação provável é que conteúdos distribuídos por slides consecutivos, como as tabelas comparativas de métricas, sejam mais bem cobertos por janelas que unem páginas vizinhas.
-A queda na fração de citações com trechos de 512 tokens é compatível com a dificuldade de modelos pequenos em usar contextos longos~\cite{liu2024lost}.
+Com trechos de 512 tokens, o gerador citou menos e, quando citou, apontou mais vezes para um trecho sem a evidência, embora trechos longos tenham mais chance de conter a página certa; isso é compatível com a dificuldade de modelos pequenos em localizar informação em contextos longos~\cite{liu2024lost} e afeta diretamente a verificabilidade da resposta.
 Como as falhas de geração superaram as de recuperação na amostra, ampliar o contexto tende a ter retorno limitado, e a hipótese a testar é que um gerador maior tenha efeito maior que a troca de segmentação.
 
-O estudo não demonstra superioridade de nenhuma configuração: com \NRespondiveisTeste{} perguntas respondíveis, os intervalos das diferenças incluem zero ou tocam nele, e os resultados devem ser lidos como tendências.
+Exceto pela precisão de citação, o estudo não demonstra superioridade de nenhuma configuração: com \NRespondiveisTeste{} perguntas respondíveis, os intervalos das diferenças incluem zero ou tocam nele, e os resultados devem ser lidos como tendências.
 A evidência anotada por página favorece a segmentação por slide no MRR e as janelas longas no Recall, e as perguntas foram escritas pelos próprios autores a partir dos slides.
 A qualidade da resposta foi julgada por modelos de linguagem e não por humanos; juízes automáticos tendem a concordar entre si mais do que avaliadores humanos e podem compartilhar vieses~\cite{panickssery2024llm}, de modo que o kappa alto não garante validade, e a amostra de \NPerguntasAmostra{} perguntas não tem poder para comparar configurações.
 Por fim, o estudo usa um único corpus, um único gerador de 3 bilhões de parâmetros e uma execução determinística, e a regra de seleção de $k$ fixou o maior valor candidato.
 
 \section{Conclusão}
 Em slides de aula em português, a segmentação estrutural por slide recuperou a evidência nas primeiras posições tão bem quanto janelas de tamanho fixo e com um dos menores custos de contexto.
-Janelas longas aumentaram a cobertura das evidências, mas encareceram a geração e reduziram o uso de citações.
+Janelas longas aumentaram a cobertura das evidências, mas encareceram a geração e pioraram a precisão das citações, o que prejudica a verificação da resposta.
 O gargalo observado esteve mais no gerador do que na recuperação.
 Trabalhos futuros devem repetir o protocolo com mais perguntas, avaliação humana e geradores maiores.
 
