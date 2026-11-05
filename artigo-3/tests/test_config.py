@@ -34,13 +34,17 @@ def test_catalogo_cobre_as_dez_aulas_nas_tres_partes():
     assert {parte for parte, _ in cat.values()} == {"V", "VI", "VII"}
 
 
-def test_execucao_canonica_bloqueada_enquanto_dataset_nao_tem_doi():
-    assert "recuperacao.modelo_embedding" not in pendencias()
-    assert "geracao.modelo_gerador" not in pendencias()
-    assert "dataset.doi" in pendencias()
-    assert "corpus.catalogo" not in pendencias()
+def test_protocolo_canonico_sem_pendencias():
+    assert CONFIG.dataset.doi == "10.5281/zenodo.23986392"
+    assert pendencias() == []
+    validar_congelamento()
+
+
+def test_campo_pendente_bloqueia_execucao_canonica():
+    cfg = replace(CONFIG, dataset=replace(CONFIG.dataset, doi=PENDENTE))
+    assert pendencias(cfg) == ["dataset.doi"]
     with pytest.raises(RuntimeError, match="não congelado"):
-        validar_congelamento()
+        validar_congelamento(cfg)
 
 
 def test_protocolo_congelado_passa():
@@ -58,7 +62,7 @@ def test_protocolo_congelado_passa():
 
 def test_protocolo_e_serializavel():
     texto = json.dumps(como_dict())
-    assert PENDENTE in texto
+    assert PENDENTE not in texto and "zenodo" in texto
 
 
 def test_modelo_tokenizador_e_revisao_de_embedding_estao_congelados():
