@@ -1,8 +1,8 @@
 """Configuração única do protocolo do Artigo 3.
 
-O artigo compara seis configurações de *chunking* em um sistema de geração
+O artigo compara sete configurações de *chunking* em um sistema de geração
 aumentada por recuperação (RAG) sobre as aulas 14–23 de Inteligência Artificial II.
-A comparação só vale se as seis passarem pelo mesmo corpus, pelo mesmo modelo de
+A comparação só vale se as sete passarem pelo mesmo corpus, pelo mesmo modelo de
 embedding, pelo mesmo gerador e pelo mesmo conjunto de perguntas. Por isso todo
 valor experimental mora aqui, e nenhum outro módulo ou notebook pode redefini-lo.
 
@@ -78,11 +78,12 @@ class ChunkingConfig:
     tamanhos_tokens: tuple[int, ...] = (128, 256, 512)
     sobreposicoes: tuple[float, ...] = (0.0, 0.2)
     estruturais: tuple[str, ...] = ("slide",)
+    versao_chunker: int = 1
     # Um slide maior que o limite de entrada do modelo de embedding é truncado
     # pelo próprio modelo; o chunker deve registrar quantos slides passaram do limite.
     # O tokenizador é o do próprio modelo de embedding, para que "128 tokens"
     # signifique o que o modelo de fato enxerga.
-    tokenizador: str = PENDENTE
+    tokenizador: str = "intfloat/multilingual-e5-base"
 
     @property
     def ids(self) -> tuple[str, ...]:
@@ -98,11 +99,16 @@ class ChunkingConfig:
 class RecuperacaoConfig:
     """Embedding, índice e métricas de recuperação (#50, #51)."""
 
-    modelo_embedding: str = PENDENTE
-    revisao_embedding: str = PENDENTE
+    modelo_embedding: str = "intfloat/multilingual-e5-base"
+    revisao_embedding: str = "d128750597153bb5987e10b1c3493a34e5a4502a"
+    prefixo_documento: str = "passage: "
+    prefixo_consulta: str = "query: "
+    batch_size: int = 32
+    max_tokens_modelo: int = 512
     # Vetores normalizados + produto interno = similaridade de cosseno.
     indice_faiss: str = "IndexFlatIP"
-    top_k: int = 5
+    cache_dir: Path = ARTIGO / "cache" / "indices"
+    # Candidatos avaliados em dev. O k usado em test vem do artefato de seleção.
     ks_metricas: tuple[int, ...] = (1, 3, 5)
 
 
@@ -134,8 +140,25 @@ class DatasetConfig:
             "nao_respondivel": 5,
         }
     )
+    categorias_por_split: dict[str, dict[str, int]] = field(
+        default_factory=lambda: {
+            "dev": {
+                "factual": 8,
+                "contextual": 4,
+                "multitrecho": 2,
+                "nao_respondivel": 1,
+            },
+            "test": {
+                "factual": 22,
+                "contextual": 11,
+                "multitrecho": 8,
+                "nao_respondivel": 4,
+            },
+        }
+    )
     doi: str = PENDENTE
-    licenca: str = PENDENTE
+    # A licença cobre as anotações autorais, não os slides de terceiros.
+    licenca: str = "CC BY 4.0"
 
 
 @dataclass(frozen=True)

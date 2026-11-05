@@ -9,8 +9,8 @@ resultados de versões distintas nunca se misturem.
 Uso::
 
     python -m src.run --split dev --limite 3      # depuração
-    python -m src.run --split test                # execução canônica
-    python -m src.run --split test --resume       # retoma após interrupção
+    python -m src.run --split test --selecao-top-k src/results/retrieval/dev/top-k-selection.json
+    python -m src.run --split test --selecao-top-k ... --resume
 """
 
 from __future__ import annotations
@@ -30,7 +30,13 @@ from pathlib import Path
 from typing import Callable
 
 from src import dataset as ds
-from src.config import ARTIGO, CONFIG, ExperimentoConfig, como_dict, set_seed, validar_congelamento
+from src.avaliacao_recuperacao import (
+    AvaliacaoRecuperacaoError,
+    carregar_selecao,
+    sha256_itens,
+    sha256_protocolo,
+)
+from src.config import ARTIGO, CONFIG, ExperimentoConfig, set_seed, validar_congelamento
 from src.contratos import Gerador, Recuperador
 from src.geracao import VERSAO_PROMPT, responder
 
@@ -94,10 +100,6 @@ def verificar_corpus(cfg: ExperimentoConfig) -> str:
     return hashlib.sha256(m_path.read_bytes()).hexdigest()
 
 
-def _hash_json(obj: object) -> str:
-    return hashlib.sha256(json.dumps(obj, sort_keys=True, ensure_ascii=False).encode()).hexdigest()
-
-
 # --- registro de ambiente --------------------------------------------------
 
 
@@ -156,6 +158,7 @@ def executar(
     resume: bool = False,
     limite: int | None = None,
     configs: tuple[str, ...] | None = None,
+    selecao_top_k: Path | None = None,
     repo: Path = ARTIGO,
 ) -> Resumo:
     if split not in ds.SPLITS:
@@ -163,6 +166,8 @@ def executar(
     canonica = split == "test"
     if canonica and limite is not None:
         raise ExecucaoError("--limite só é permitido no split dev.")
+    if canonica and selecao_top_k is None:
+        raise ExecucaoError("a execução de test exige --selecao-top-k produzida em dev")
     configs = configs or cfg.chunking.ids
     desconhecidas = set(configs) - set(cfg.chunking.ids)
     if desconhecidas:
@@ -185,15 +190,43 @@ def executar(
 
     corpus_sha = verificar_corpus(cfg)
     dataset_path = cfg.dataset.dataset_path
-    itens = ds.carregar(dataset_path, split=split, estrito=canonica)
+    itens = ds.carregar(
+        dataset_path,
+        split=split,
+        estrito=canonica,
+        manifesto_path=cfg.corpus.manifesto_path,
+        cfg=cfg.dataset,
+        corpus=cfg.corpus,
+    )
     if limite is not None:
         itens = itens[:limite]
+
+    top_k = max(cfg.recuperacao.ks_metricas)
+    selecao_sha256 = None
+    if selecao_top_k is not None:
+        dev = ds.carregar(
+            dataset_path,
+            split="dev",
+            estrito=True,
+            manifesto_path=cfg.corpus.manifesto_path,
+            cfg=cfg.dataset,
+            corpus=cfg.corpus,
+        )
+        try:
+            top_k, selecao_sha256 = carregar_selecao(
+                selecao_top_k,
+                cfg=cfg,
+                corpus_sha256=corpus_sha,
+                dev_dataset_sha256=sha256_itens(dev),
+            )
+        except AvaliacaoRecuperacaoError as e:
+            raise ExecucaoError(str(e)) from e
 
     manifesto = {
         "split": split,
         "git_sha": sha,
         "git_sujo": bool(sujos),
-        "protocolo_sha256": _hash_json(como_dict(cfg, sem_caminhos=True)),
+        "protocolo_sha256": sha256_protocolo(cfg),
         "corpus_manifesto_sha256": corpus_sha,
         "dataset_sha256": ds.sha256_dataset(dataset_path),
         "configs": list(configs),
@@ -201,7 +234,8 @@ def executar(
         "modelo_gerador": gerador.nome,
         "revisao_gerador": gerador.revisao,
         "versao_prompt": VERSAO_PROMPT,
-        "top_k": cfg.recuperacao.top_k,
+        "top_k": top_k,
+        "selecao_top_k_sha256": selecao_sha256,
         "seed": cfg.seed,
     }
     m_path = saida / "run-manifest.json"
@@ -239,7 +273,9 @@ def executar(
                 if destino.exists() and _resultado_valido(destino, it.id, config_id):
                     pulados += 1
                     continue
-                r = responder(it.id, it.pergunta, recuperador, gerador, top_k=cfg.recuperacao.top_k, cfg=cfg.geracao)
+                r = responder(
+                    it.id, it.pergunta, recuperador, gerador, top_k=top_k, cfg=cfg.geracao
+                )
                 dados = r.como_dict() | {
                     "split": split,
                     "categoria": it.categoria,
@@ -277,6 +313,11 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--limite", type=int, help="só no split dev: número de perguntas")
     p.add_argument("--configs", nargs="+", help="subconjunto da grade (padrão: todas)")
     p.add_argument("--saida", type=Path)
+    p.add_argument(
+        "--selecao-top-k",
+        type=Path,
+        help="top-k-selection.json produzido exclusivamente a partir de dev",
+    )
     a = p.parse_args(argv)
     try:
         fabrica, gerador = _fabricas_padrao()
@@ -288,6 +329,7 @@ def main(argv: list[str] | None = None) -> int:
             resume=a.resume,
             limite=a.limite,
             configs=tuple(a.configs) if a.configs else None,
+            selecao_top_k=a.selecao_top_k,
         )
     except (ExecucaoError, ds.DatasetError, RuntimeError) as e:
         print(f"erro: {e}", file=sys.stderr)

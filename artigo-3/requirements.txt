@@ -4,10 +4,10 @@
 # Extração do corpus (#48).
 pymupdf>=1.24,<2
 
-# Chunking, embeddings e índice (#50) — entram quando o modelo for congelado (#46).
-# numpy>=2.0,<3
-# faiss-cpu>=1.8,<2
-# sentence-transformers>=3,<6
+# Chunking, embeddings e índice (#50); modelo e revisão congelados em config.py.
+numpy>=2.0,<3
+faiss-cpu>=1.8,<2
+sentence-transformers>=5,<6
 
 # Gerador (#52): Qwen2.5-3B-Instruct. No Colab o torch já vem instalado.
 transformers>=4.45,<6

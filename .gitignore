@@ -24,6 +24,8 @@ __pycache__/
 .venv/
 venv/
 .ipynb_checkpoints/
+.pytest_cache/
+.pytest-tmp*/
 *.pt
 *.pth
 *.ckpt
@@ -61,6 +63,8 @@ artigo-*/EXPLICACAO-*.md
 artigo-*/data/*
 !artigo-*/data/README.md
 !artigo-*/data/manifesto-corpus.json
+!artigo-*/data/dataset-schema.json
+!artigo-*/data/planejamento-dataset.jsonl
 
 # --- resultados brutos do Artigo 3 ---
 # Os JSON por pergunta carregam o texto dos slides recuperado; ficam fora do Git
@@ -69,3 +73,12 @@ artigo-*/src/results/raw/**/*.json
 !artigo-*/src/results/raw/**/run-manifest.json
 !artigo-*/src/results/raw/**/environment.json
 !artigo-*/src/results/**/run.log
+
+# Rankings de recuperação também carregam texto dos slides; só resumos e
+# manifestos podem ser versionados.
+artigo-*/src/results/retrieval/**/rankings.jsonl
+!artigo-*/src/results/retrieval/**/summary.csv
+
+# --- cache local de embeddings e índices do Artigo 3 ---
+# Reconstruível a partir do corpus, modelo e configuração congelados.
+artigo-*/cache/

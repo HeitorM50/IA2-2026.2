@@ -111,7 +111,7 @@ def responder(
     recuperador: Recuperador,
     gerador: Gerador,
     *,
-    top_k: int = CONFIG.recuperacao.top_k,
+    top_k: int,
     cfg: GeracaoConfig = CONFIG.geracao,
 ) -> RespostaRAG:
     t0 = time.perf_counter()

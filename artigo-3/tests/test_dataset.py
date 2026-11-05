@@ -31,6 +31,8 @@ def test_dataset_do_protocolo_carrega_e_filtra_split(tmp_path):
         (lambda d: d[-1].__setitem__("evidencias_validas", [{"aula": 14, "pagina": 1}]), "não respondível com evidência"),
         (lambda d: d[0].__setitem__("split", "treino"), "split"),
         (lambda d: d[20].__setitem__("pergunta", d[0]["pergunta"]), "perguntas repetidas"),
+        (lambda d: d[5].__setitem__("resposta_referencia", "inventada"), "não respondível com resposta"),
+        (lambda d: d[11].__setitem__("evidencias_validas", d[11]["evidencias_validas"][:1]), "multitrecho exige"),
         (lambda d: d.pop(), "split esperado"),
     ],
 )
@@ -44,3 +46,13 @@ def test_erros_do_dataset(tmp_path, mutacao, trecho):
 def test_modo_nao_estrito_aceita_dataset_parcial(tmp_path):
     p = _gravar(tmp_path, [_item(0, "dev"), _item(1, "dev")])
     assert len(carregar(p, estrito=False)) == 2
+
+
+def test_manifesto_rejeita_pagina_inexistente(tmp_path):
+    itens = [_item(0, "dev")]
+    itens[0]["pagina"] = 3
+    itens[0]["evidencias_validas"] = [{"aula": 14, "pagina": 3}]
+    manifesto = tmp_path / "manifesto.json"
+    manifesto.write_text(json.dumps({"arquivos": [{"aula": 14, "n_paginas": 2}]}))
+    with pytest.raises(DatasetError, match="não existe no manifesto"):
+        carregar(_gravar(tmp_path, itens), estrito=False, manifesto_path=manifesto)

@@ -37,7 +37,7 @@ Status em 04/11/2026. "Proposto" = decidido pela dupla, aguardando confirmação
 | Corpus | congelado | aulas 14–23, dez PDFs, 482 páginas. Partes inferidas pelo conteúdo (os slides não as numeram): V = 14–17 (PLN/LLMs), VI = 18–20 (RL), VII = 21–23 (XAI/fairness) |
 | Redistribuição dos PDFs | **aberta — confirmar com o professor** | até lá, PDFs e texto extraído fora do Git |
 | Configurações | congelado | linha de base estrutural `slide` (um chunk por slide) + janelas fixas 128/256/512 tokens × 0%/20% de sobreposição = 7 configurações (`src/config.py`) |
-| Métrica principal de recuperação | proposto | Recall@5 (a evidência certa precisa chegar ao gerador); MRR e Precision@k secundárias |
+| Métrica principal de recuperação | congelado | Recall@k; um k global entre 1/3/5 é escolhido só em dev por maior Recall médio, com desempate pelo menor k; MRR@5 e Precision@k secundárias |
 | Métricas da resposta | proposto | correção, completude, fidelidade, afirmações não sustentadas, abstenção correta |
 | Gerador | congelado (04/11) | Qwen2.5-3B-Instruct, revisão `aa8e725`, decodificação gulosa, Colab T4 fp16. Escolhido por reprodutibilidade (pesos abertos, revisão fixa, sem API). Licença Qwen Research (uso acadêmico) |
 | Publicação do dataset | proposto | Zenodo com DOI, licença CC BY 4.0, só perguntas/respostas/referência à página — sem texto integral dos slides |
@@ -74,6 +74,22 @@ Status em 04/11/2026. "Proposto" = decidido pela dupla, aguardando confirmação
   (21/54, divisor de seção), nenhuma duplicada por overlay.
 - 04/11/2026 — acrescentada a estratégia `slide` como linha de base, para que a
   comparação seja entre estratégias de segmentação e não só entre valores de tamanho.
+- 04/11/2026 — #49 (infraestrutura): congelados 60 IDs em
+  `data/planejamento-dataset.jsonl`, com 15 `dev`, 45 `test`, seis itens por aula
+  e composição estratificada por categoria. Acrescentados JSON Schema, guia de
+  anotação e revisão cruzada, licença CC BY 4.0 apenas para as anotações,
+  metadados provisórios de citação e validação contra o manifesto do corpus.
+  A redação das perguntas permanece pendente porque os JSONL extraídos não são
+  versionados e não estão presentes nesta cópia do workspace.
+- 04/11/2026 — #50: implementados chunking por tokens, baseline por slide,
+  `IndexFlatIP` com normalização L2, busca com metadados e cache auditável por
+  corpus/modelo/configuração. Congelado `intfloat/multilingual-e5-base` na
+  revisão `d128750597153bb5987e10b1c3493a34e5a4502a`, com prefixos E5 para
+  consulta e passagem. O cache local fica fora do Git.
+- 04/11/2026 — #51: implementados rankings auditáveis, Recall/Precision@1/3/5,
+  MRR@5, cobertura multitrecho, redundância por IoU de tokens, latência e
+  agregações geral/V/VI/VII. A seleção global de `top-k` usa somente `dev` e
+  passa a ser uma dependência obrigatória da execução canônica de `test`.
 - 04/11/2026 — gerador congelado: Qwen2.5-3B-Instruct (`aa8e725`), gulosa.
   Ensaio local com o Qwen2.5-0.5B (mesma família e template; o 3B não cabe nos
   7 GB da máquina) levou ao prompt v2: na v1 o cabeçalho `[1] (aula, p.)` tinha o

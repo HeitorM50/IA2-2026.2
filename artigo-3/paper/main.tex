@@ -62,6 +62,10 @@ A geração aumentada por recuperação (RAG, do inglês \textit{Retrieval-Augme
 \section{Resultados}
 
 \section{Discussão e Limitações}
+As janelas \texttt{c512} contêm 512 tokens de conteúdo antes do prefixo E5 e
+dos tokens especiais. Uma janela completa pode, portanto, ocupar 516 posições
+na entrada limitada a 512, com truncamento de até quatro tokens finais. Os
+manifestos dos índices contabilizam explicitamente os chunks afetados.
 
 \section{Conclusão}
 

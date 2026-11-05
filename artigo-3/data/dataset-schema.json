@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/ia2-rag/dataset-schema-v1.json",
+  "title": "Item do dataset de avaliação RAG das aulas 14–23",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "split",
+    "parte",
+    "aula",
+    "pagina",
+    "categoria",
+    "pergunta",
+    "resposta_referencia",
+    "evidencias_validas",
+    "respondivel"
+  ],
+  "properties": {
+    "id": {"type": "string", "pattern": "^q[0-9]{3}$"},
+    "split": {"enum": ["dev", "test"]},
+    "parte": {"enum": ["V", "VI", "VII"]},
+    "aula": {"type": "integer", "minimum": 14, "maximum": 23},
+    "pagina": {"type": "integer", "minimum": 1},
+    "categoria": {
+      "enum": ["factual", "contextual", "multitrecho", "nao_respondivel"]
+    },
+    "pergunta": {"type": "string", "minLength": 1},
+    "resposta_referencia": {"type": ["string", "null"]},
+    "evidencias_validas": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["aula", "pagina"],
+        "properties": {
+          "aula": {"type": "integer", "minimum": 14, "maximum": 23},
+          "pagina": {"type": "integer", "minimum": 1}
+        }
+      }
+    },
+    "respondivel": {"type": "boolean"}
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"respondivel": {"const": true}}},
+      "then": {
+        "properties": {
+          "resposta_referencia": {"type": "string", "minLength": 1},
+          "evidencias_validas": {"minItems": 1}
+        }
+      },
+      "else": {
+        "properties": {
+          "categoria": {"const": "nao_respondivel"},
+          "resposta_referencia": {"type": "null"},
+          "evidencias_validas": {"maxItems": 0}
+        }
+      }
+    },
+    {
+      "if": {"properties": {"categoria": {"const": "multitrecho"}}},
+      "then": {"properties": {"evidencias_validas": {"minItems": 2}}}
+    }
+  ]
+}

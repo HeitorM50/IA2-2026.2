@@ -24,6 +24,9 @@ class RecuperadorFalso:
                 aula=14,
                 pagina_inicio=i + 1,
                 pagina_fim=i + 1,
+                token_inicio=i * 10,
+                token_fim=(i + 1) * 10,
+                n_tokens=10,
                 origem="Aula14.pdf",
             )
             for i in range(k)
