@@ -1,5 +1,5 @@
 cff-version: 1.2.0
-message: "A versão 0.1.0-draft ainda não deve ser citada; use o DOI da release 1.0.0 quando publicado."
+message: "Se usar este dataset, cite-o pelo DOI abaixo."
 title: "Dataset de avaliação de RAG sobre aulas de Inteligência Artificial II"
 type: dataset
 authors:
@@ -7,7 +7,8 @@ authors:
     given-names: "Gustavo Xavier"
   - family-names: "Ricardo"
     given-names: "Heitor Macêdo"
-version: 0.1.0-draft
-date-released: 2026-11-04
+version: 1.0.0
+date-released: 2026-11-05
+doi: "10.5281/zenodo.23986392"
 license: CC-BY-4.0
 repository-code: "https://github.com/HeitorM50/IA2-2026.2"

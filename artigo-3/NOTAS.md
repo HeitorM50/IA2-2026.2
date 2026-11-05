@@ -105,3 +105,6 @@ Status em 04/11/2026. "Proposto" = decidido pela dupla, aguardando confirmação
   falha de recuperação de falha de geração. Tamanho da amostra ainda em aberto:
   a proposta é 10 perguntas × 7 configurações = 70 itens por avaliador, declarada
   como limitação.
+- 05/11/2026 — dataset v1.0.0 publicado no Zenodo (DOI `10.5281/zenodo.23986392`),
+  com o md5 do `perguntas.jsonl` conferido contra o do Git. `config.py` ficou sem
+  nenhum `PENDENTE`; a execução canônica no Colab está liberada.

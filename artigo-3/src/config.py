@@ -156,7 +156,8 @@ class DatasetConfig:
             },
         }
     )
-    doi: str = PENDENTE
+    # Zenodo, versão 1.0.0, publicada em 05/11/2026 (md5 do perguntas.jsonl conferido).
+    doi: str = "10.5281/zenodo.23986392"
     # A licença cobre as anotações autorais, não os slides de terceiros.
     licenca: str = "CC BY 4.0"
 
