@@ -294,3 +294,17 @@ def test_faiss_real_persiste_e_reconstroi_mesmo_ranking(ambiente):
     assert type(segundo.indice).__name__ == "IndexFlatIP"
     assert segundo.usou_cache is True
     assert [(r.chunk_id, r.score) for r in segundo.buscar("atenção", 3)] == esperado
+
+
+def test_codificador_padrao_carrega_o_modelo_uma_vez(monkeypatch):
+    import src.indice as indice
+
+    criados = []
+    monkeypatch.setattr(indice, "CodificadorSentenceTransformers", lambda cfg: criados.append(cfg) or object())
+    indice.codificador_padrao.cache_clear()
+    try:
+        a = indice.codificador_padrao(CONFIG.recuperacao)
+        b = indice.codificador_padrao(CONFIG.recuperacao)
+    finally:
+        indice.codificador_padrao.cache_clear()
+    assert a is b and len(criados) == 1
