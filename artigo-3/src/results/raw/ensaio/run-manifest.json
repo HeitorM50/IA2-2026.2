@@ -1,0 +1,22 @@
+{
+  "configs": [
+    "slide"
+  ],
+  "corpus_manifesto_sha256": "5f2d908dbfdcb375c5ef994de3bd82a82c71df5b0662dbe667f1064ac80f90a5",
+  "dataset_sha256": "5529b0cd9195a1bb6cd181d3edc59a2e48db7099705dc54d0021a6f6b019d495",
+  "git_sha": "4f347d62c167bf152ff32c6e5c54f570dc705c38",
+  "git_sujo": false,
+  "modelo_gerador": "Qwen/Qwen2.5-3B-Instruct",
+  "perguntas": [
+    "q001",
+    "q006",
+    "q007"
+  ],
+  "protocolo_sha256": "5f69bb9f3b69046add6ba171884e662b487ccdb3bea690c32824beddbdd13772",
+  "revisao_gerador": "aa8e72537993ba99e69dfaafa59ed015b17504d1",
+  "seed": 42,
+  "selecao_top_k_sha256": "15480b5603d1ca230480661ceb8f5e15291eba966838641550467db2de9bf1a7",
+  "split": "dev",
+  "top_k": 5,
+  "versao_prompt": 2
+}

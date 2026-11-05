@@ -1,0 +1,5 @@
+2026-11-05 18:13:38,794 INFO início split=dev sha=4f347d62c167 sujo=False configs=('slide',) n=3
+2026-11-05 18:13:54,027 INFO ok slide q001
+2026-11-05 18:13:55,567 INFO ok slide q006
+2026-11-05 18:13:59,439 INFO ok slide q007
+2026-11-05 18:13:59,440 INFO fim executados=3 pulados=0

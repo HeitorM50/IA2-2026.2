@@ -1,0 +1,13 @@
+{
+  "python": "3.13.16 (main, Oct  1 2026, 15:40:24) [GCC 13.3.0]",
+  "plataforma": "Linux-6.6.159+-x86_64-with-glibc2.39",
+  "pacotes": {
+    "pymupdf": "1.28.2",
+    "numpy": "2.4.6",
+    "faiss-cpu": "1.15.1",
+    "sentence-transformers": "5.7.0",
+    "torch": "2.11.0+cu130",
+    "transformers": "5.22.0"
+  },
+  "cuda_visible_devices": null
+}

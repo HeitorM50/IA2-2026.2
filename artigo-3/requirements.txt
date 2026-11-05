@@ -13,5 +13,8 @@ sentence-transformers>=5,<6
 transformers>=4.45,<6
 accelerate>=0.34
 
+# Tabela e figura do artigo (#54).
+matplotlib>=3.8,<4
+
 # Testes locais.
 pytest>=8,<10

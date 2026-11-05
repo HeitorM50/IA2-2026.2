@@ -1,0 +1,46 @@
+{
+  "avaliacao_manifesto_sha256": "02de8500e8dac2a80f7d0a14325d5b8d527507e7ebc196b1812edc2244f9399d",
+  "candidatos": [
+    1,
+    3,
+    5
+  ],
+  "configs": [
+    "slide",
+    "c128-o0",
+    "c128-o20",
+    "c256-o0",
+    "c256-o20",
+    "c512-o0",
+    "c512-o20"
+  ],
+  "corpus_manifesto_sha256": "5f2d908dbfdcb375c5ef994de3bd82a82c71df5b0662dbe667f1064ac80f90a5",
+  "dev_dataset_sha256": "cb7bff4cd6006710fb00fe2f3a789fff20fc90edf79971ee7310d466c25418fa",
+  "perguntas_dev": [
+    "q001",
+    "q006",
+    "q007",
+    "q010",
+    "q013",
+    "q024",
+    "q025",
+    "q031",
+    "q034",
+    "q037",
+    "q040",
+    "q043",
+    "q054",
+    "q055",
+    "q058"
+  ],
+  "protocolo_sha256": "5f69bb9f3b69046add6ba171884e662b487ccdb3bea690c32824beddbdd13772",
+  "rankings_sha256": "013b9268bbbf3247aeb1043e3431e73d3b24a08b67c093f1a7da4626b60aebe5",
+  "recall_medio_dev": {
+    "1": 0.6173469387755102,
+    "3": 0.7755102040816326,
+    "5": 0.8673469387755102
+  },
+  "regra": "maior_recall_medio_dev_desempate_menor_k",
+  "schema_version": 1,
+  "top_k_selecionado": 5
+}

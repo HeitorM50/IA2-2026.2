@@ -108,3 +108,19 @@ Status em 04/11/2026. "Proposto" = decidido pela dupla, aguardando confirmação
 - 05/11/2026 — dataset v1.0.0 publicado no Zenodo (DOI `10.5281/zenodo.23986392`),
   com o md5 do `perguntas.jsonl` conferido contra o do Git. `config.py` ficou sem
   nenhum `PENDENTE`; a execução canônica no Colab está liberada.
+- 05/11/2026 — execução canônica concluída no Colab (T4): 315/315 pares a partir
+  de `4f347d6` (Git limpo, DOI congelado), k = 5 selecionado no dev. Resultados
+  brutos no Drive dos autores; manifestos, resumos e `run.log` versionados em
+  `src/results/`.
+- 05/11/2026 — **avaliação de qualidade por LLM-juiz, não humana.** Por falta de
+  tempo para a avaliação humana cega prevista, os 70 itens da amostra (10
+  perguntas × 7 configurações) foram avaliados por dois juízes LLM independentes
+  (Claude Opus e Claude Sonnet), às cegas quanto à configuração, com a mesma
+  `RUBRICA.md`. O artigo deve declarar isso explicitamente na Metodologia e nas
+  Limitações: juízes LLM tendem a concordar entre si mais do que humanos, então
+  o kappa alto não equivale a validade; e com 10 perguntas por configuração as
+  diferenças de qualidade não têm poder estatístico.
+- 05/11/2026 — `src/report.py` (#54): IC 95% por bootstrap percentil sobre as
+  perguntas (10.000 reamostras) e diferenças pareadas contra `slide`. Nenhuma
+  diferença de MRR@5 ou Recall@5 contra `slide` tem IC que exclua zero com folga;
+  o texto deve tratar as diferenças como tendências.
