@@ -20,9 +20,9 @@ Critério: `python -m src.planejamento_dataset` termina com código zero.
 
 ## Fase 2 — Anotação e revisão
 
-- [ ] Redigir as 60 perguntas consultando o corpus extraído.
-- [ ] Registrar resposta e todas as evidências válidas dos 55 itens respondíveis.
-- [ ] Fazer busca negativa documentada para os cinco itens não respondíveis.
+- [x] Redigir as 60 perguntas consultando o corpus extraído.
+- [x] Registrar resposta e evidências dos 55 itens respondíveis.
+- [x] Fazer busca negativa autoral documentada para os cinco itens não respondíveis.
 - [ ] Executar revisão cruzada cega à resposta do autor.
 - [ ] Corrigir divergências e marcar cada item como `aprovado`.
 
