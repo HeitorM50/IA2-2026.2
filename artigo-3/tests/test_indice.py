@@ -33,6 +33,12 @@ class TokenizadorEspaco:
         return " ".join(self.inverso[t] for t in tokens)
 
 
+class TokenizadorComEspeciais(TokenizadorEspaco):
+    def encode(self, texto, *, add_special_tokens=False):
+        ids = super().encode(texto, add_special_tokens=False)
+        return [-1, *ids, -2] if add_special_tokens else ids
+
+
 class CodificadorFalso:
     nome = "modelo-teste"
     revisao = "rev-1"
@@ -166,6 +172,37 @@ def test_manifesto_registra_contagem_tamanho_e_tempos(ambiente):
         "tempo_faiss_segundos", "tempo_indexacao_segundos",
     ):
         assert manifesto[campo] >= 0
+
+
+def test_manifesto_conta_prefixo_e_tokens_especiais_no_limite(tmp_path):
+    cfg = replace(
+        CONFIG,
+        corpus=replace(CONFIG.corpus, manifesto_path=tmp_path / "manifesto-ausente.json"),
+        chunking=replace(CONFIG.chunking, tokenizador="tokenizador-teste"),
+        recuperacao=replace(
+            CONFIG.recuperacao,
+            modelo_embedding="modelo-teste",
+            revisao_embedding="rev-1",
+            cache_dir=tmp_path / "cache",
+            max_tokens_modelo=512,
+        ),
+    )
+    pagina = _pagina(14, 1, " ".join(f"t{i}" for i in range(512)))
+
+    recuperador = construir_recuperador(
+        "c512-o0",
+        cfg=cfg,
+        paginas=[pagina],
+        tokenizador=TokenizadorComEspeciais(),
+        codificador=CodificadorFalso(),
+        faiss_mod=FaissFalso,
+    )
+
+    manifesto = json.loads((recuperador.cache_dir / "manifest.json").read_text())
+    assert manifesto["n_chunks"] == 1
+    assert manifesto["max_tokens_modelo"] == 512
+    assert manifesto["contagem_limite_inclui_prefixo_e_tokens_especiais"] is True
+    assert manifesto["chunks_acima_limite_modelo"] == 1
 
 
 def test_segunda_construcao_reutiliza_cache_e_preserva_busca(ambiente):

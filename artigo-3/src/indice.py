@@ -21,6 +21,7 @@ from src.contratos import Trecho
 from src.corpus import Pagina, carregar_paginas
 
 ARQUIVOS_CACHE = ("chunks.jsonl", "embeddings.npy", "index.faiss", "manifest.json")
+VERSAO_CACHE_INDICE = 2
 
 
 class IndiceError(RuntimeError):
@@ -115,6 +116,7 @@ def _hash_manifesto_corpus(cfg: ExperimentoConfig) -> str | None:
 def chave_cache(config_id: str, paginas: Sequence[Pagina], cfg: ExperimentoConfig = CONFIG) -> str:
     parametros = parametros_janela(config_id, cfg.chunking)
     payload = {
+        "versao_cache_indice": VERSAO_CACHE_INDICE,
         "config_id": config_id,
         "parametros": None if parametros is None else {
             "tamanho_tokens": parametros.tamanho_tokens,
@@ -129,6 +131,7 @@ def chave_cache(config_id: str, paginas: Sequence[Pagina], cfg: ExperimentoConfi
         "versao_chunker": cfg.chunking.versao_chunker,
         "prefixo_documento": cfg.recuperacao.prefixo_documento,
         "prefixo_consulta": cfg.recuperacao.prefixo_consulta,
+        "max_tokens_modelo": cfg.recuperacao.max_tokens_modelo,
         "indice_faiss": cfg.recuperacao.indice_faiss,
     }
     return hashlib.sha256(_json_deterministico(payload)).hexdigest()
@@ -137,6 +140,20 @@ def chave_cache(config_id: str, paginas: Sequence[Pagina], cfg: ExperimentoConfi
 def _chunks_jsonl(chunks: Sequence[Chunk]) -> str:
     return "".join(
         json.dumps(c.como_dict(), ensure_ascii=False, sort_keys=True) + "\n" for c in chunks
+    )
+
+
+def _n_tokens_entrada_modelo(
+    tokenizador: Tokenizador,
+    texto: str,
+    prefixo_documento: str,
+) -> int:
+    """Conta a entrada tal como o E5 a recebe, inclusive prefixo e tokens especiais."""
+    return len(
+        tokenizador.encode(
+            prefixo_documento + texto,
+            add_special_tokens=True,
+        )
     )
 
 
@@ -305,6 +322,7 @@ def construir_recuperador(
         faiss_mod.write_index(indice, str(temporario / "index.faiss"))
         parametros = parametros_janela(config_id, cfg.chunking)
         manifesto = {
+            "versao_cache_indice": VERSAO_CACHE_INDICE,
             "cache_key": cache_key,
             "config_id": config_id,
             "entrada_sha256": hash_entrada(paginas),
@@ -320,8 +338,16 @@ def construir_recuperador(
             "n_chunks": len(chunks),
             "n_tokens_total": sum(c.n_tokens for c in chunks),
             "dimensao_embedding": int(embeddings.shape[1]),
+            "max_tokens_modelo": cfg.recuperacao.max_tokens_modelo,
+            "contagem_limite_inclui_prefixo_e_tokens_especiais": True,
             "chunks_acima_limite_modelo": sum(
-                c.n_tokens > cfg.recuperacao.max_tokens_modelo for c in chunks
+                _n_tokens_entrada_modelo(
+                    tokenizador,
+                    c.texto,
+                    cfg.recuperacao.prefixo_documento,
+                )
+                > cfg.recuperacao.max_tokens_modelo
+                for c in chunks
             ),
             "tamanho_indice_bytes": (temporario / "index.faiss").stat().st_size,
             "tempo_chunking_segundos": tempo_chunking,

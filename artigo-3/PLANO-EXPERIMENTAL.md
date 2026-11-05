@@ -26,6 +26,12 @@ O embedding foi congelado como `intfloat/multilingual-e5-base`, revisão
 mesma revisão, sem tokens especiais, e o E5 recebe os prefixos `passage: ` para
 chunks e `query: ` para perguntas.
 
+As janelas `c512` preservam 512 tokens de conteúdo. Na entrada do E5, o prefixo
+de passagem e os tokens especiais podem elevar uma janela completa a 516 tokens;
+o modelo limita a entrada a 512 e pode truncar até quatro tokens finais. O
+manifesto do índice registra a quantidade de chunks afetados contando a entrada
+completa, inclusive prefixo e tokens especiais.
+
 ## Pipeline
 
 1. `src/corpus.py` — extrai o texto por página com origem e SHA-256, recompõe
