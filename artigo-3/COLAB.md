@@ -8,10 +8,12 @@ no notebook: tudo vem de `src/config.py`. Runtime: **GPU T4**.
 - `src/config.py` sem nenhum `PENDENTE`, **inclusive `dataset.doi`**. O DOI entra
   no hash do protocolo; preenchê-lo depois da seleção de `k` invalida a seleção.
 - Commit com o config final mergeado na `main`; anote o SHA.
-- No Drive: os PDFs em `IA2/art3/` e `perguntas.jsonl` em `IA2/art3-dados/`
-  (o dataset não está no Git; o manifesto do `run.py` grava o hash dele).
+- No Drive: os PDFs em `IA2/art3/`. O dataset (`data/perguntas.jsonl`) já vem
+  com o clone; o manifesto do `run.py` grava o hash dele.
 
 ## Notebook
+
+O mesmo roteiro está em `colab.ipynb`, pronto para abrir no Colab.
 
 ```python
 # 1. Código a partir de um SHA fixo, nunca da branch (#53)
@@ -24,12 +26,11 @@ no notebook: tudo vem de `src/config.py`. Runtime: **GPU T4**.
 #    A versão exata usada fica gravada em src/results/raw/<split>/pip-freeze.txt.
 !pip install -q -r requirements.txt
 
-# 3. Corpus e dataset a partir do Drive (fora do repositório)
+# 3. Corpus a partir do Drive (os PDFs não estão no repositório)
 from google.colab import drive
 drive.mount('/content/drive')
 import os
 os.environ['IA2_CORPUS_DIR'] = '/content/drive/MyDrive/IA2/art3'
-!cp /content/drive/MyDrive/IA2/art3-dados/perguntas.jsonl data/
 
 # 4. Verificações antes de qualquer execução
 !python -m pytest -q                                 # com faiss: nenhum teste pulado
