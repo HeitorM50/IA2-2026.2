@@ -1,0 +1,79 @@
+{
+  "c128-o0": {
+    "n": 45,
+    "abstencao_correta": 1.0,
+    "abstencao_indevida": 0.07317073170731707,
+    "abstencao_indevida_com_evidencia": 0.024390243902439025,
+    "respostas_com_citacao": 0.9473684210526315,
+    "respostas_com_citacao_invalida": 0.0,
+    "tokens_entrada_medio": 1033.2888888888888,
+    "tokens_saida_medio": 89.91111111111111,
+    "latencia_geracao_media_s": 5.649442317866679
+  },
+  "c128-o20": {
+    "n": 45,
+    "abstencao_correta": 1.0,
+    "abstencao_indevida": 0.04878048780487805,
+    "abstencao_indevida_com_evidencia": 0.04878048780487805,
+    "respostas_com_citacao": 0.9487179487179487,
+    "respostas_com_citacao_invalida": 0.0,
+    "tokens_entrada_medio": 1035.2888888888888,
+    "tokens_saida_medio": 101.6,
+    "latencia_geracao_media_s": 6.213820415288895
+  },
+  "c256-o0": {
+    "n": 45,
+    "abstencao_correta": 1.0,
+    "abstencao_indevida": 0.0,
+    "abstencao_indevida_com_evidencia": 0.0,
+    "respostas_com_citacao": 0.926829268292683,
+    "respostas_com_citacao_invalida": 0.0,
+    "tokens_entrada_medio": 1724.088888888889,
+    "tokens_saida_medio": 101.8,
+    "latencia_geracao_media_s": 7.062478715955538
+  },
+  "c256-o20": {
+    "n": 45,
+    "abstencao_correta": 1.0,
+    "abstencao_indevida": 0.024390243902439025,
+    "abstencao_indevida_com_evidencia": 0.024390243902439025,
+    "respostas_com_citacao": 0.975,
+    "respostas_com_citacao_invalida": 0.0,
+    "tokens_entrada_medio": 1734.6,
+    "tokens_saida_medio": 96.15555555555555,
+    "latencia_geracao_media_s": 6.767132172999982
+  },
+  "c512-o0": {
+    "n": 45,
+    "abstencao_correta": 1.0,
+    "abstencao_indevida": 0.04878048780487805,
+    "abstencao_indevida_com_evidencia": 0.04878048780487805,
+    "respostas_com_citacao": 0.8974358974358975,
+    "respostas_com_citacao_invalida": 0.0,
+    "tokens_entrada_medio": 3061.3777777777777,
+    "tokens_saida_medio": 113,
+    "latencia_geracao_media_s": 10.840192265399972
+  },
+  "c512-o20": {
+    "n": 45,
+    "abstencao_correta": 1.0,
+    "abstencao_indevida": 0.07317073170731707,
+    "abstencao_indevida_com_evidencia": 0.04878048780487805,
+    "respostas_com_citacao": 0.8157894736842105,
+    "respostas_com_citacao_invalida": 0.0,
+    "tokens_entrada_medio": 3095.2,
+    "tokens_saida_medio": 117.37777777777778,
+    "latencia_geracao_media_s": 11.256422478733343
+  },
+  "slide": {
+    "n": 45,
+    "abstencao_correta": 1.0,
+    "abstencao_indevida": 0.024390243902439025,
+    "abstencao_indevida_com_evidencia": 0.024390243902439025,
+    "respostas_com_citacao": 0.95,
+    "respostas_com_citacao_invalida": 0.0,
+    "tokens_entrada_medio": 1112.9555555555555,
+    "tokens_saida_medio": 97.2,
+    "latencia_geracao_media_s": 6.104266101555565
+  }
+}
