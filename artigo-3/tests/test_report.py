@@ -61,7 +61,7 @@ def test_macros_correspondem_aos_resultados_brutos():
     assert m["MRRSlide"] == "1{,}00"
     assert m["MRRCPeqSem"] == "0{,}75"  # (1 + 1 + 0,5 + 0,5) / 4
     assert m["RecallUmCPeqSem"] == "0{,}50"
-    assert m["DifMRRCPeqSem"] == "-0{,}25"
+    assert m["DifMRRCPeqSem"] == "\\ensuremath{-}0{,}25"
     assert m["AbstencaoCorretaSlide"] == "100\\%"
     assert m["TokensEntradaCPeqSem"] == "500"
     assert m["MelhorMRRConfig"] == "Slide"

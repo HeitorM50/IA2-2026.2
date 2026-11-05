@@ -187,7 +187,11 @@ def resumo_juizes(
 
 def fmt(x: float, casas: int = 2) -> str:
     """Vírgula decimal sem espaço extra no modo matemático."""
-    return f"{x:.{casas}f}".replace(".", "{,}")
+    texto = f"{x:.{casas}f}".replace(".", "{,}")
+    if texto.startswith("-"):
+        # sinal de menos tipográfico; "-0,00" vira "0,00"
+        texto = texto[1:] if set(texto[1:]) <= set("0{,}") else "\\ensuremath{-}" + texto[1:]
+    return texto
 
 
 def fmt_pct(x: float) -> str:
@@ -237,13 +241,13 @@ def gerar(
             media = fmean(vals)
             lo, hi = bootstrap_ic(vals, n=n_bootstrap)
             linha |= {met: media, f"{met}_ic_inf": lo, f"{met}_ic_sup": hi}
-            macros += [macro(f"{nome}{s}", fmt(media)), macro(f"{nome}{s}IC", f"[{fmt(lo)}; {fmt(hi)}]")]
+            macros += [macro(f"{nome}{s}", fmt(media)), macro(f"{nome}{s}IC", f"\\mbox{{[{fmt(lo)}; {fmt(hi)}]}}")]
             if c != LINHA_DE_BASE and met in ("recall5", "mrr5"):
                 d, dlo, dhi = bootstrap_diferenca(rec[c][met], rec[LINHA_DE_BASE][met], n=n_bootstrap)
                 linha |= {f"{met}_dif_slide": d, f"{met}_dif_ic_inf": dlo, f"{met}_dif_ic_sup": dhi}
                 macros += [
                     macro(f"Dif{nome}{s}", fmt(d)),
-                    macro(f"Dif{nome}{s}IC", f"[{fmt(dlo)}; {fmt(dhi)}]"),
+                    macro(f"Dif{nome}{s}IC", f"\\mbox{{[{fmt(dlo)}; {fmt(dhi)}]}}"),
                 ]
         g = ger[c]
         linha |= g
@@ -255,6 +259,14 @@ def gerar(
             macro(f"TokensEntrada{s}", f"{g['tokens_entrada']:.0f}"),
             macro(f"LatenciaGeracao{s}", fmt(g["latencia_geracao"], 1)),
         ]
+        for parte in ("V", "VI", "VII"):
+            vals = [
+                r["metricas_evidencia"]["recall_at_k"]["5"]
+                for r in rankings
+                if r["config_id"] == c and r["respondivel"] and r.get("parte") == parte and r["split"] == "test"
+            ]
+            if vals:
+                macros.append(macro(f"RecallCinco{s}Parte{parte}", fmt(fmean(vals))))
         if qual:
             q = qual[c]
             linha |= {f"juiz_{k}": v for k, v in q.items()}
@@ -270,6 +282,19 @@ def gerar(
                  "afirmacoes_nao_sustentadas": "NaoSustentadas"}
         macros += [macro(f"Kappa{nomes[k]}", fmt(v)) for k, v in kappas.items()]
         macros.append(macro("NItensJuizes", str(len(chave))))
+
+    if juizes:
+        from src.analise_geracao import desfechos
+
+        (_, j1), (_, j2) = sorted(juizes.items())
+        consenso = {i: {k: min(j1[i][k], j2[i][k]) for k in j1[i]} for i in chave}
+        por_cfg = desfechos(brutos, consenso, chave)
+        total = {d: sum(v[d] for v in por_cfg.values()) for d in next(iter(por_cfg.values()))}
+        nomes = {"acerto": "Acerto", "falha_geracao": "FalhaGeracao", "falha_recuperacao": "FalhaRecuperacao",
+                 "acerto_sem_evidencia": "AcertoSemEvidencia", "abstencao_correta": "AbstencaoCorretaAmostra",
+                 "resposta_inventada": "RespostaInventada"}
+        macros += [macro(f"N{nomes[d]}", str(n)) for d, n in total.items()]
+        macros.append(macro("NItensRespondiveisAmostra", str(sum(total[d] for d in ("acerto", "falha_geracao", "falha_recuperacao", "acerto_sem_evidencia")))))
 
     # Destaques derivados, para o texto não depender de leitura manual da tabela.
     melhor_mrr = max(linhas, key=lambda l: l["mrr5"])
@@ -354,6 +379,21 @@ def escrever(linhas: list[dict], macros: list[str], tabela: str, *, resultados: 
     (paper / "tabela-principal.tex").write_text(tabela, encoding="utf-8")
 
 
+def macros_protocolo() -> list[str]:
+    """Números de protocolo lidos dos artefatos, para não serem digitados no texto."""
+    corpus = json.loads(CONFIG.corpus.manifesto_path.read_text(encoding="utf-8"))
+    selecao = json.loads((RESULTADOS / "retrieval" / "dev" / "top-k-selection.json").read_text(encoding="utf-8"))
+    saida = [
+        macro("NPaginasCorpus", str(sum(a["n_paginas"] for a in corpus["arquivos"]))),
+        macro("NAulasCorpus", str(len(corpus["arquivos"]))),
+        macro("TopK", str(selecao["top_k_selecionado"])),
+    ]
+    amostra = AVALIACAO / "amostra.json"
+    if amostra.is_file():
+        saida.append(macro("NPerguntasAmostra", str(json.loads(amostra.read_text())["n_perguntas"])))
+    return saida
+
+
 def main() -> int:
     try:
         from src.analise_geracao import ler_chave
@@ -363,6 +403,7 @@ def main() -> int:
         juizes = carregar_juizes(AVALIACAO)
         chave = ler_chave(AVALIACAO / "chave.csv") if juizes else None
         linhas, macros, tabela = gerar(rankings, brutos, juizes or None, chave)
+        macros += macros_protocolo()
         escrever(linhas, macros, tabela, resultados=RESULTADOS, paper=PAPER)
         figura(linhas, PAPER / "figs" / "compromisso.pdf")
     except ReportError as e:
