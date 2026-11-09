@@ -61,11 +61,11 @@ def test_macros_correspondem_aos_resultados_brutos():
     assert m["MRRSlide"] == "1{,}00"
     assert m["MRRCPeqSem"] == "0{,}75"  # (1 + 1 + 0,5 + 0,5) / 4
     assert m["RecallUmCPeqSem"] == "0{,}50"
-    assert m["DifMRRCPeqSem"] == "-0{,}25"
+    assert m["DifMRRCPeqSem"] == "\\ensuremath{-}0{,}25"
     assert m["AbstencaoCorretaSlide"] == "100\\%"
     assert m["TokensEntradaCPeqSem"] == "500"
     assert m["MelhorMRRConfig"] == "Slide"
-    assert "\\textbf{1{,}00}" in tabela and tabela.count("\\\\") == 3  # cabeçalho + 2 linhas
+    assert "\\textbf{1{,}00}" in tabela and tabela.count("\\\\") == 4  # dois cabeçalhos + 2 linhas
     assert {l["config_id"] for l in linhas} == set(CONFIGS)
 
 
@@ -113,3 +113,28 @@ def test_escreve_arquivos(tmp_path):
     assert (tmp_path / "resumo.csv").read_text().startswith("config_id,")
     assert "\\newcommand{\\MRRSlide}" in (tmp_path / "results-generated.tex").read_text()
     assert (tmp_path / "tabela-principal.tex").read_text().count("\\toprule") == 1
+
+
+def test_f1_de_tokens_ignora_citacao_acento_e_palavras_vazias():
+    from src.report import f1_tokens
+
+    assert f1_tokens("É a similaridade do cosseno [1].", "A similaridade do cosseno.") == 1.0
+    assert f1_tokens("Não há informação.", "BLEU.") == 0.0
+    assert 0 < f1_tokens("BLEU e ROUGE", "BLEU") < 1
+
+
+def test_precisao_de_citacao_conta_so_trechos_com_evidencia():
+    from src.report import por_config_geracao
+
+    base = {
+        "config_id": "slide", "pergunta_id": "q1", "respondivel": True, "abstencao": False,
+        "resposta": "x [1] [2]", "citacoes": [1, 2], "evidencias_validas": [[15, 3]],
+        "trechos": [
+            {"aula": 15, "pagina_inicio": 2, "pagina_fim": 4},  # cobre a evidência
+            {"aula": 15, "pagina_inicio": 9, "pagina_fim": 9},
+        ],
+    }
+    abst = base | {"pergunta_id": "q2", "abstencao": True, "citacoes": []}
+    g = por_config_geracao([base, abst], {"q1": "x", "q2": "y"})["slide"]
+    assert g["precisao_citacao"] == {"q1": 0.5}
+    assert set(g["f1"]) == {"q1", "q2"}

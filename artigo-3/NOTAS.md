@@ -124,3 +124,8 @@ Status em 04/11/2026. "Proposto" = decidido pela dupla, aguardando confirmação
   perguntas (10.000 reamostras) e diferenças pareadas contra `slide`. Nenhuma
   diferença de MRR@5 ou Recall@5 contra `slide` tem IC que exclua zero com folga;
   o texto deve tratar as diferenças como tendências.
+- 05/11/2026 — métricas automáticas sobre as 315 respostas: precisão de citação
+  (trechos citados que contêm evidência) e F1 de tokens contra a referência; e
+  Multi@5 nas perguntas de múltiplos trechos. A precisão de citação é o único
+  resultado com IC pareado que exclui zero (512/0 % contra `slide`). Figuras novas:
+  Recall@5 por parte e desfechos da amostra julgada.
