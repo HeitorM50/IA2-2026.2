@@ -6,15 +6,17 @@ Este script lê os resultados brutos e escreve:
 - ``src/results/resumo.csv``: uma linha por configuração;
 - ``paper/results-generated.tex``: uma macro por número usado no texto;
 - ``paper/tabela-principal.tex``: a tabela comparativa (booktabs);
-- ``paper/figs/compromisso.pdf``: MRR@5 contra tokens de contexto.
+- ``paper/figs/compromisso.pdf``: MRR@5 contra tokens de entrada do gerador;
+- ``paper/figs/sobreposicao-pareada.pdf``: diferenças de 20% menos 0%.
 
 Incerteza: há uma execução por configuração (decodificação gulosa), então a
 dispersão vem das perguntas. Intervalos de 95% por bootstrap percentil sobre
 as perguntas respondíveis; as diferenças contra a linha de base ``slide`` são
 pareadas (a mesma reamostra de perguntas para as duas configurações).
 
-A avaliação de qualidade da resposta é feita por dois juízes LLM, declarados
-como tal no artigo; ela entra só se ``data/avaliacao/juiz-*.csv`` existirem.
+A avaliação principal pode ser humana ou automática, mas deve ser selecionada
+explicitamente. As planilhas individuais medem concordância; quando houver um
+arquivo de consenso, ele fornece as notas agregadas usadas no artigo.
 
 Uso::
 
@@ -23,6 +25,7 @@ Uso::
 
 from __future__ import annotations
 
+import argparse
 import csv
 import json
 import random
@@ -86,11 +89,24 @@ def carregar_geracao(raiz: Path) -> list[dict]:
     return brutos
 
 
-def carregar_juizes(avaliacao: Path) -> dict[str, dict[str, dict]]:
-    """{juiz: {item: notas}} para cada ``juiz-*.csv`` encontrado."""
+def carregar_juizes(avaliacao: Path, caminhos: list[Path] | None = None) -> dict[str, dict[str, dict]]:
+    """{juiz: {item: notas}} para caminhos explícitos ou ``juiz-*.csv``."""
     from src.avaliacao_humana import ler_avaliacao
 
-    return {p.stem: ler_avaliacao(p) for p in sorted(avaliacao.glob("juiz-*.csv"))}
+    arquivos = caminhos if caminhos is not None else sorted(avaliacao.glob("juiz-*.csv"))
+    return {p.stem: ler_avaliacao(p) for p in arquivos}
+
+
+def carregar_consenso(caminho: Path | None, juizes: dict[str, dict[str, dict]]) -> dict[str, dict] | None:
+    """Lê o consenso humano, incluindo automaticamente os itens sem divergência."""
+    if caminho is None:
+        return None
+    if len(juizes) != 2:
+        raise ReportError("o consenso exige exatamente duas avaliações individuais")
+    from src.avaliacao_humana import ler_consenso
+
+    (_, j1), (_, j2) = sorted(juizes.items())
+    return ler_consenso(caminho, j1, j2)
 
 
 # --------------------------------------------------------------------------- estatística
@@ -131,36 +147,54 @@ def por_config_recuperacao(rankings: list[dict]) -> dict[str, dict[str, dict[str
         saida[c]["mrr5"][q] = m["mrr_at_5"]
         saida[c]["precision5"][q] = m["precision_at_k"]["5"]
         if r.get("categoria") == "multitrecho":
+            sucesso = float(m["todas_evidencias_at_k"]["5"])
+        else:
+            # Em factual/contextual, páginas múltiplas são evidências alternativas.
+            sucesso = float(m["recall_at_k"]["5"] > 0)
+        saida[c]["sucesso5"][q] = sucesso
+        if r.get("categoria") == "multitrecho":
             saida[c]["todas5_multi"][q] = float(m["todas_evidencias_at_k"]["5"])
     return saida
 
 
 # Palavras vazias frequentes do português; removidas antes do F1 de tokens.
-PALAVRAS_VAZIAS = set(
+PALAVRAS_VAZIAS_V1 = set(
     "a o as os um uma uns umas de do da dos das em no na nos nas por pelo pela pelos pelas para "
     "com sem e ou que se ao aos a as e nao mais como mas sua seu suas seus ele ela eles elas isso "
     "esse essa este esta entre sobre ate quando ja tambem so pode podem ser sao foi ha".split()
 )
+PALAVRAS_VAZIAS = PALAVRAS_VAZIAS_V1 - {"nao", "sem"}
 
 
-def tokens_normalizados(texto: str) -> list[str]:
+def tokens_normalizados(texto: str, *, versao_original: bool = False) -> list[str]:
     """Minúsculas, sem acento, sem marcadores de citação e sem palavras vazias."""
     texto = re.sub(r"\[\d+(?:\s*[,;]\s*\d+)*\]", " ", texto)
     texto = unicodedata.normalize("NFKD", texto.lower())
     texto = "".join(ch for ch in texto if not unicodedata.combining(ch))
-    return [t for t in re.findall(r"[a-z0-9]+", texto) if t not in PALAVRAS_VAZIAS]
+    vazias = PALAVRAS_VAZIAS_V1 if versao_original else PALAVRAS_VAZIAS
+    return [t for t in re.findall(r"[a-z0-9]+", texto) if t not in vazias]
 
 
-def f1_tokens(resposta: str, referencia: str) -> float:
-    """F1 de sobreposição de tokens, como no SQuAD, sobre os tokens normalizados."""
+def _f1_tokens(resposta: str, referencia: str, *, versao_original: bool) -> float:
     from collections import Counter
 
-    r, g = Counter(tokens_normalizados(resposta)), Counter(tokens_normalizados(referencia))
+    r = Counter(tokens_normalizados(resposta, versao_original=versao_original))
+    g = Counter(tokens_normalizados(referencia, versao_original=versao_original))
     comum = sum((r & g).values())
     if comum == 0:
         return 0.0
     precisao, revocacao = comum / sum(r.values()), comum / sum(g.values())
     return 2 * precisao * revocacao / (precisao + revocacao)
+
+
+def f1_tokens_v1(resposta: str, referencia: str) -> float:
+    """Versão publicada originalmente, que removia também negações."""
+    return _f1_tokens(resposta, referencia, versao_original=True)
+
+
+def f1_tokens(resposta: str, referencia: str) -> float:
+    """Diagnóstico lexical que preserva ``não`` e ``sem``."""
+    return _f1_tokens(resposta, referencia, versao_original=False)
 
 
 def _trecho_relevante(trecho: dict, evidencias: set[tuple[int, int]]) -> bool:
@@ -170,7 +204,8 @@ def _trecho_relevante(trecho: dict, evidencias: set[tuple[int, int]]) -> bool:
 def por_config_geracao(brutos: list[dict], referencias: dict[str, str]) -> dict[str, dict[str, dict[str, float]]]:
     """{config: {métrica: {pergunta: valor}}} nas respondíveis.
 
-    - ``f1``: F1 de tokens entre resposta e referência (abstenção vale o que der, ≈ 0);
+    - ``f1_tokens_v1``: versão publicada, mantida para rastreabilidade;
+    - ``f1_lexical``: variante que preserva negações;
     - ``precisao_citacao``: fração dos trechos citados que contêm uma página-evidência,
       só nas respostas com ao menos uma citação válida.
     """
@@ -179,7 +214,8 @@ def por_config_geracao(brutos: list[dict], referencias: dict[str, str]) -> dict[
         if not b["respondivel"]:
             continue
         c, q = b["config_id"], b["pergunta_id"]
-        saida[c]["f1"][q] = f1_tokens(b["resposta"], referencias[q])
+        saida[c]["f1_tokens_v1"][q] = f1_tokens_v1(b["resposta"], referencias[q])
+        saida[c]["f1_lexical"][q] = f1_tokens(b["resposta"], referencias[q])
         if b["citacoes"] and not b["abstencao"]:
             ev = {(int(a), int(p)) for a, p in b["evidencias_validas"]}
             citados = [b["trechos"][i - 1] for i in b["citacoes"] if 1 <= i <= len(b["trechos"])]
@@ -196,7 +232,11 @@ def resumo_geracao(brutos: list[dict]) -> dict[str, dict[str, float]]:
     for c, rs in por.items():
         nao = [r for r in rs if not r["respondivel"]]
         sim = [r for r in rs if r["respondivel"]]
-        subst = [r for r in rs if not r["abstencao"]]
+        # Cobertura de citação só é definida em respostas respondíveis e não
+        # abstidas. A relevância é calculada separadamente apenas onde existe
+        # ao menos uma citação válida.
+        subst = [r for r in sim if not r["abstencao"]]
+        com_citacao = [r for r in subst if r["citacoes"]]
         saida[c] = {
             "abstencao_correta": fmean(r["abstencao"] for r in nao) if nao else float("nan"),
             "abstencao_indevida": fmean(r["abstencao"] for r in sim) if sim else float("nan"),
@@ -204,15 +244,25 @@ def resumo_geracao(brutos: list[dict]) -> dict[str, dict[str, float]]:
             "citacao_invalida": fmean(bool(r["citacoes_invalidas"]) for r in subst) if subst else float("nan"),
             "tokens_entrada": fmean(r["tokens_entrada"] for r in rs),
             "latencia_geracao": fmean(r["latencia_geracao_s"] for r in rs),
+            "n_respondiveis": len(sim),
             "n_nao_respondiveis": len(nao),
+            "n_respostas_substantivas": len(subst),
+            "n_respostas_com_citacao": len(com_citacao),
         }
     return saida
 
 
 def resumo_juizes(
-    juizes: dict[str, dict[str, dict]], chave: dict[str, tuple[str, str]]
+    juizes: dict[str, dict[str, dict]],
+    chave: dict[str, tuple[str, str]],
+    consenso: dict[str, dict] | None = None,
 ) -> tuple[dict[str, dict[str, float]], dict[str, float]]:
-    """Média dos dois juízes por item, agregada por configuração, e kappa por critério."""
+    """Concordância individual e qualidade agregada pela avaliação principal.
+
+    Quando ``consenso`` é informado, suas notas são o resultado principal. Sem
+    consenso, a média dos dois avaliadores é mantida apenas para compatibilidade
+    com a análise automática antiga.
+    """
     from src.avaliacao_humana import RUBRICA, kappa_cohen
 
     if len(juizes) != 2:
@@ -227,10 +277,12 @@ def resumo_juizes(
     }
     por: dict[str, list[dict]] = defaultdict(list)
     for i in itens:
-        por[chave[i][1]].append({c: (j1[i][c] + j2[i][c]) / 2 for c in RUBRICA})
+        notas = consenso[i] if consenso is not None else {c: (j1[i][c] + j2[i][c]) / 2 for c in RUBRICA}
+        por[chave[i][1]].append(notas)
     agregado = {
         cfg: {
             "correcao": fmean(n["correcao"] for n in ns) / 2,  # 0–1
+            "completude": fmean(n["completude"] for n in ns) / 2,
             "fidelidade": fmean(n["fidelidade"] for n in ns) / 2,
             "nao_sustentadas": fmean(n["afirmacoes_nao_sustentadas"] for n in ns),
         }
@@ -268,6 +320,8 @@ def gerar(
     chave: dict[str, tuple[str, str]] | None = None,
     *,
     referencias: dict[str, str] | None = None,
+    consenso: dict[str, dict] | None = None,
+    avaliacao_principal: str = "automatica",
     n_bootstrap: int = N_BOOTSTRAP,
 ) -> tuple[list[dict], list[str], str]:
     """Devolve (linhas do resumo, macros, tabela LaTeX)."""
@@ -279,7 +333,11 @@ def gerar(
         raise ReportError(f"recuperação {sorted(rec)} e geração {sorted(ger)} cobrem configurações diferentes")
     if LINHA_DE_BASE not in rec:
         raise ReportError("a linha de base 'slide' não está nos resultados")
-    qual, kappas = (resumo_juizes(juizes, chave) if juizes else (None, None))
+    if avaliacao_principal not in {"humana", "automatica"}:
+        raise ReportError("avaliação principal deve ser 'humana' ou 'automatica'")
+    if avaliacao_principal == "humana" and consenso is None:
+        raise ReportError("a avaliação humana principal exige um arquivo de consenso")
+    qual, kappas = (resumo_juizes(juizes, chave, consenso) if juizes else (None, None))
 
     linhas, macros = [], []
     n_resp = len(rec[LINHA_DE_BASE]["recall5"])
@@ -295,13 +353,14 @@ def gerar(
     for c in configs:
         s = SUFIXO[c]
         linha = {"config_id": c}
-        for met, nome in (("recall1", "RecallUm"), ("recall5", "RecallCinco"), ("mrr5", "MRR"), ("precision5", "PrecisaoCinco")):
+        for met, nome in (("recall1", "RecallUm"), ("recall5", "RecallCinco"), ("mrr5", "MRR"),
+                          ("precision5", "PrecisaoCinco"), ("sucesso5", "SucessoCinco")):
             vals = list(rec[c][met].values())
             media = fmean(vals)
             lo, hi = bootstrap_ic(vals, n=n_bootstrap)
             linha |= {met: media, f"{met}_ic_inf": lo, f"{met}_ic_sup": hi}
             macros += [macro(f"{nome}{s}", fmt(media)), macro(f"{nome}{s}IC", f"\\mbox{{[{fmt(lo)}; {fmt(hi)}]}}")]
-            if c != LINHA_DE_BASE and met in ("recall5", "mrr5"):
+            if c != LINHA_DE_BASE and met in ("recall5", "mrr5", "sucesso5"):
                 d, dlo, dhi = bootstrap_diferenca(rec[c][met], rec[LINHA_DE_BASE][met], n=n_bootstrap)
                 linha |= {f"{met}_dif_slide": d, f"{met}_dif_ic_inf": dlo, f"{met}_dif_ic_sup": dhi}
                 macros += [
@@ -312,7 +371,8 @@ def gerar(
             v = fmean(rec[c]["todas5_multi"].values())
             linha["todas5_multi"] = v
             macros.append(macro(f"TodasMulti{s}", fmt(v)))
-        for met, nome in (("f1", "FUm"), ("precisao_citacao", "PrecCitacao")):
+        for met, nome in (("f1_tokens_v1", "FUmVUm"), ("f1_lexical", "FUmLexical"),
+                          ("precisao_citacao", "RelevanciaCitacao")):
             if c in gpq and gpq[c].get(met):
                 vals = list(gpq[c][met].values())
                 lo, hi = bootstrap_ic(vals, n=n_bootstrap)
@@ -330,6 +390,9 @@ def gerar(
             macro(f"CitacaoInvalida{s}", fmt_pct(g["citacao_invalida"])),
             macro(f"TokensEntrada{s}", f"{g['tokens_entrada']:.0f}"),
             macro(f"LatenciaGeracao{s}", fmt(g["latencia_geracao"], 1)),
+            macro(f"NRespondiveis{s}", str(g["n_respondiveis"])),
+            macro(f"NRespostasSubstantivas{s}", str(g["n_respostas_substantivas"])),
+            macro(f"NRespostasComCitacao{s}", str(g["n_respostas_com_citacao"])),
         ]
         for parte in ("V", "VI", "VII"):
             vals = [
@@ -345,6 +408,7 @@ def gerar(
             linha |= {f"juiz_{k}": v for k, v in q.items()}
             macros += [
                 macro(f"Correcao{s}", fmt(q["correcao"])),
+                macro(f"Completude{s}", fmt(q["completude"])),
                 macro(f"Fidelidade{s}", fmt(q["fidelidade"])),
                 macro(f"NaoSustentadas{s}", fmt(q["nao_sustentadas"])),
             ]
@@ -360,16 +424,46 @@ def gerar(
         from src.analise_geracao import desfechos
 
         (_, j1), (_, j2) = sorted(juizes.items())
-        consenso = {i: {k: min(j1[i][k], j2[i][k]) for k in j1[i]} for i in chave}
-        por_cfg = desfechos(brutos, consenso, chave)
+        notas_desfecho = consenso or {i: {k: min(j1[i][k], j2[i][k]) for k in j1[i]} for i in chave}
+        por_cfg = desfechos(brutos, notas_desfecho, chave)
         for l in linhas:
             l |= {f"desfecho_{d}": n for d, n in por_cfg[l["config_id"]].items()}
         total = {d: sum(v[d] for v in por_cfg.values()) for d in next(iter(por_cfg.values()))}
-        nomes = {"acerto": "Acerto", "falha_geracao": "FalhaGeracao", "falha_recuperacao": "FalhaRecuperacao",
-                 "acerto_sem_evidencia": "AcertoSemEvidencia", "abstencao_correta": "AbstencaoCorretaAmostra",
-                 "resposta_inventada": "RespostaInventada"}
+        nomes = {
+            "correta_cobertura_completa": "CorretaCoberturaCompleta",
+            "correta_cobertura_parcial": "CorretaCoberturaParcial",
+            "correta_cobertura_ausente": "CorretaCoberturaAusente",
+            "incorreta_cobertura_completa": "IncorretaCoberturaCompleta",
+            "incorreta_cobertura_parcial": "IncorretaCoberturaParcial",
+            "incorreta_cobertura_ausente": "IncorretaCoberturaAusente",
+            "abstencao_correta": "AbstencaoCorretaAmostra",
+            "resposta_inventada": "RespostaInventada",
+        }
         macros += [macro(f"N{nomes[d]}", str(n)) for d, n in total.items()]
-        macros.append(macro("NItensRespondiveisAmostra", str(sum(total[d] for d in ("acerto", "falha_geracao", "falha_recuperacao", "acerto_sem_evidencia")))))
+        categorias_resp = tuple(d for d in total if d.startswith("correta_") or d.startswith("incorreta_"))
+        macros.append(macro("NItensRespondiveisAmostra", str(sum(total[d] for d in categorias_resp))))
+
+    # Comparações pareadas que respondem diretamente à pergunta sobreposição:
+    # 20% menos 0%, dentro de cada tamanho e sobre as mesmas perguntas.
+    for com, sem, nome in (("c128-o20", "c128-o0", "CPeq"),
+                           ("c256-o20", "c256-o0", "CMed"),
+                           ("c512-o20", "c512-o0", "CGrd")):
+        if com not in rec or sem not in rec:
+            continue
+        for met, rotulo in (("recall5", "RecallCinco"), ("mrr5", "MRR"), ("sucesso5", "SucessoCinco")):
+            d, lo, hi = bootstrap_diferenca(rec[com][met], rec[sem][met], n=n_bootstrap)
+            ids = set(rec[com][met]) & set(rec[sem][met])
+            macros += [
+                macro(f"DifOverlap{rotulo}{nome}", fmt(d)),
+                macro(f"DifOverlap{rotulo}{nome}IC", f"\\mbox{{[{fmt(lo)}; {fmt(hi)}]}}"),
+                macro(f"NOverlap{rotulo}{nome}", str(len(ids))),
+            ]
+            for linha in linhas:
+                if linha["config_id"] == com:
+                    linha[f"{met}_dif_overlap"] = d
+                    linha[f"{met}_dif_overlap_ic_inf"] = lo
+                    linha[f"{met}_dif_overlap_ic_sup"] = hi
+                    linha[f"{met}_dif_overlap_n"] = len(ids)
 
     # Destaques derivados, para o texto não depender de leitura manual da tabela.
     melhor_mrr = max(linhas, key=lambda l: l["mrr5"])
@@ -380,7 +474,8 @@ def gerar(
     ]
     if gpq:
         n_cit = sum(len(gpq[c].get("precisao_citacao", {})) for c in gpq)
-        macros.append(macro("NRespostasComCitacao", str(n_cit)))
+        macros.append(macro("NObservacoesRelevanciaCitacao", str(n_cit)))
+    macros.append(macro("AvaliacaoPrincipal", "humana" if avaliacao_principal == "humana" else "automática"))
     return linhas, macros, tabela_latex(linhas, com_juizes=bool(qual))
 
 
@@ -389,16 +484,19 @@ def tabela_latex(linhas: list[dict], *, com_juizes: bool) -> str:
     def tem(m):
         return all(m in l for l in linhas)
 
-    rec = [("recall1", "R@1"), ("recall5", "R@5"), ("mrr5", "MRR@5"), ("precision5", "P@5")]
+    rec = [("recall5", "R@5"), ("mrr5", "MRR@5"), ("sucesso5", "Suc.@5")]
     if tem("todas5_multi"):
         rec.append(("todas5_multi", "Multi@5"))
-    resp = [("com_citacao", "Cit.")]
-    resp += [(m, n) for m, n in (("precisao_citacao", "Prec. cit."), ("f1", "F1")) if tem(m)]
+    resp = [("com_citacao", "Cob. cit.")]
+    resp += [(m, n) for m, n in (("precisao_citacao", "Rel. cit."),) if tem(m)]
     if com_juizes:
-        resp += [("juiz_correcao", "Corr."), ("juiz_fidelidade", "Fid.")]
-    custo = [("tokens_entrada", "Tok."), ("latencia_geracao", "Lat. (s)")]
-    maior_melhor = {m for m, _ in rec + resp}
+        resp += [("juiz_correcao", "Corr."), ("juiz_completude", "Compl."),
+                 ("juiz_fidelidade", "Fid."), ("juiz_nao_sustentadas", "N. sust.")]
+    custo = [("tokens_entrada", "Tok. ent."), ("latencia_geracao", "Lat. (s)")]
+    maior_melhor = {m for m, _ in rec + resp if m != "juiz_nao_sustentadas"}
     melhor = {m: max(l[m] for l in linhas) for m in maior_melhor}
+    if com_juizes:
+        melhor["juiz_nao_sustentadas"] = min(l["juiz_nao_sustentadas"] for l in linhas)
     melhor |= {m: min(l[m] for l in linhas) for m, _ in custo}
 
     def cel(l, m):
@@ -454,7 +552,7 @@ def figura(linhas: list[dict], destino: Path) -> None:
         dy = 4 if base or not par or y >= par[0]["mrr5"] else -8
         ax.annotate(ROTULO[l["config_id"]].replace("\\%", "%"), (x, y), textcoords="offset points",
                     xytext=(5, dy), fontsize=6)
-    ax.set_xlabel("Tokens de contexto por pergunta (média)", fontsize=7)
+    ax.set_xlabel("Tokens de entrada do gerador por pergunta (média)", fontsize=7)
     ax.set_ylabel("MRR@5", fontsize=7)
     ax.tick_params(labelsize=6)
     ax.grid(alpha=0.3, lw=0.4)
@@ -493,11 +591,48 @@ def figura_partes(linhas: list[dict], destino: Path) -> None:
 
 
 DESFECHOS_FIG = (
-    ("desfecho_acerto", "Acerto", "#2b8a3e"),
-    ("desfecho_falha_geracao", "Falha de geração", "#e8590c"),
-    ("desfecho_falha_recuperacao", "Falha de recuperação", "#c92a2a"),
+    ("desfecho_correta_cobertura_completa", "Correta, cob. completa", "#2b8a3e"),
+    ("desfecho_correta_cobertura_parcial", "Correta, cob. parcial", "#74b816"),
+    ("desfecho_correta_cobertura_ausente", "Correta, cob. ausente", "#a9e34b"),
+    ("desfecho_incorreta_cobertura_completa", "Incorreta, cob. completa", "#e8590c"),
+    ("desfecho_incorreta_cobertura_parcial", "Incorreta, cob. parcial", "#f08c00"),
+    ("desfecho_incorreta_cobertura_ausente", "Incorreta, cob. ausente", "#c92a2a"),
     ("desfecho_abstencao_correta", "Abstenção correta", "#868e96"),
 )
+
+
+def figura_sobreposicao(linhas: list[dict], destino: Path) -> None:
+    """Diferenças pareadas de 20% menos 0% de sobreposição por tamanho."""
+    import matplotlib
+
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    pares = [l for l in linhas if "recall5_dif_overlap" in l]
+    if not pares:
+        raise ReportError("não há pares de sobreposição para a figura")
+    metricas = (("recall5", "Recall@5", "o"), ("mrr5", "MRR@5", "s"),
+                ("sucesso5", "Sucesso@5", "^"))
+    x = list(range(len(pares)))
+    fig, ax = plt.subplots(figsize=(3.4, 1.85))
+    deslocamentos = (-0.15, 0.0, 0.15)
+    for (met, rotulo, marcador), dx in zip(metricas, deslocamentos):
+        y = [l[f"{met}_dif_overlap"] for l in pares]
+        lo = [l[f"{met}_dif_overlap_ic_inf"] for l in pares]
+        hi = [l[f"{met}_dif_overlap_ic_sup"] for l in pares]
+        ax.errorbar([v + dx for v in x], y,
+                    yerr=[[a - b for a, b in zip(y, lo)], [b - a for a, b in zip(y, hi)]],
+                    fmt=marcador, ms=3.5, capsize=2, lw=0.8, label=rotulo)
+    ax.axhline(0, color="black", lw=0.6)
+    ax.set_xticks(x, [l["config_id"].split("-")[0][1:] + " tokens" for l in pares], fontsize=6)
+    ax.set_ylabel("Diferença: 20% − 0%", fontsize=6.5)
+    ax.tick_params(axis="y", labelsize=5.5)
+    ax.grid(axis="y", alpha=0.25, lw=0.4)
+    ax.legend(fontsize=5.3, ncol=3, frameon=False, loc="upper center")
+    fig.tight_layout()
+    destino.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(destino, bbox_inches="tight", pad_inches=0.02)
+    plt.close(fig)
 
 
 def figura_desfechos(linhas: list[dict], destino: Path) -> None:
@@ -522,7 +657,7 @@ def figura_desfechos(linhas: list[dict], destino: Path) -> None:
     ax.set_ylabel("Itens", fontsize=6)
     ax.tick_params(axis="y", labelsize=5.5)
     ax.grid(axis="y", alpha=0.3, lw=0.4)
-    fig.legend(*ax.get_legend_handles_labels(), fontsize=5, ncol=4, loc="upper center",
+    fig.legend(*ax.get_legend_handles_labels(), fontsize=4.4, ncol=4, loc="upper center",
                bbox_to_anchor=(0.5, 1.0), frameon=False, handlelength=1, columnspacing=0.8)
     fig.tight_layout(rect=(0, 0, 1, 0.9))
     destino.parent.mkdir(parents=True, exist_ok=True)
@@ -545,40 +680,55 @@ def escrever(linhas: list[dict], macros: list[str], tabela: str, *, resultados: 
     (paper / "tabela-principal.tex").write_text(tabela, encoding="utf-8")
 
 
-def macros_protocolo() -> list[str]:
+def macros_protocolo(resultados: Path = RESULTADOS, avaliacao: Path = AVALIACAO) -> list[str]:
     """Números de protocolo lidos dos artefatos, para não serem digitados no texto."""
     corpus = json.loads(CONFIG.corpus.manifesto_path.read_text(encoding="utf-8"))
-    selecao = json.loads((RESULTADOS / "retrieval" / "dev" / "top-k-selection.json").read_text(encoding="utf-8"))
+    selecao = json.loads((resultados / "retrieval" / "dev" / "top-k-selection.json").read_text(encoding="utf-8"))
     saida = [
         macro("NPaginasCorpus", str(sum(a["n_paginas"] for a in corpus["arquivos"]))),
         macro("NAulasCorpus", str(len(corpus["arquivos"]))),
         macro("TopK", str(selecao["top_k_selecionado"])),
     ]
-    amostra = AVALIACAO / "amostra.json"
+    amostra = avaliacao / "amostra.json"
     if amostra.is_file():
         saida.append(macro("NPerguntasAmostra", str(json.loads(amostra.read_text())["n_perguntas"])))
     return saida
 
 
 def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--resultados-dir", type=Path, default=RESULTADOS)
+    parser.add_argument("--avaliacao-dir", type=Path, default=AVALIACAO)
+    parser.add_argument("--paper-dir", type=Path, default=PAPER)
+    parser.add_argument("--avaliacao-principal", choices=("humana", "automatica"), required=True)
+    parser.add_argument("--avaliador", type=Path, action="append", dest="avaliadores",
+                        help="CSV individual; informe exatamente duas vezes")
+    parser.add_argument("--consenso", type=Path, help="CSV de divergências resolvidas; obrigatório para avaliação humana")
+    args = parser.parse_args()
     try:
         from src.analise_geracao import ler_chave
 
-        rankings = carregar_rankings(RESULTADOS / "retrieval" / "test" / "rankings.jsonl")
-        brutos = carregar_geracao(RESULTADOS / "raw" / "test")
-        juizes = carregar_juizes(AVALIACAO)
-        chave = ler_chave(AVALIACAO / "chave.csv") if juizes else None
+        rankings = carregar_rankings(args.resultados_dir / "retrieval" / "test" / "rankings.jsonl")
+        brutos = carregar_geracao(args.resultados_dir / "raw" / "test")
+        if args.avaliadores is not None and len(args.avaliadores) != 2:
+            raise ReportError("--avaliador deve ser informado exatamente duas vezes")
+        juizes = carregar_juizes(args.avaliacao_dir, args.avaliadores)
+        chave = ler_chave(args.avaliacao_dir / "chave.csv") if juizes else None
+        consenso = carregar_consenso(args.consenso, juizes)
         from src.dataset import carregar
 
         referencias = {it.id: it.resposta_referencia for it in carregar(split="test") if it.respondivel}
-        linhas, macros, tabela = gerar(rankings, brutos, juizes or None, chave, referencias=referencias)
-        macros += macros_protocolo()
-        escrever(linhas, macros, tabela, resultados=RESULTADOS, paper=PAPER)
-        figura(linhas, PAPER / "figs" / "compromisso.pdf")
-        figura_partes(linhas, PAPER / "figs" / "recall-partes.pdf")
+        linhas, macros, tabela = gerar(
+            rankings, brutos, juizes or None, chave, referencias=referencias,
+            consenso=consenso, avaliacao_principal=args.avaliacao_principal,
+        )
+        macros += macros_protocolo(args.resultados_dir, args.avaliacao_dir)
+        escrever(linhas, macros, tabela, resultados=args.resultados_dir, paper=args.paper_dir)
+        figura(linhas, args.paper_dir / "figs" / "compromisso.pdf")
+        figura_sobreposicao(linhas, args.paper_dir / "figs" / "sobreposicao-pareada.pdf")
         if juizes:
-            figura_desfechos(linhas, PAPER / "figs" / "desfechos.pdf")
-    except ReportError as e:
+            figura_desfechos(linhas, args.paper_dir / "figs" / "desfechos.pdf")
+    except (ReportError, ValueError, FileNotFoundError) as e:
         print(f"erro: {e}", file=sys.stderr)
         return 1
     print(f"{len(macros)} macros, {len(linhas)} configurações; juízes: {sorted(juizes) or 'nenhum'}")

@@ -23,9 +23,11 @@ CONFIGS = ("slide", "c128-o0")
 def _ranking(config, q, r1, r5, mrr, respondivel=True):
     return {
         "split": "test", "config_id": config, "pergunta_id": q, "respondivel": respondivel,
+        "categoria": "factual" if respondivel else "nao_respondivel",
         "metricas_evidencia": {
             "recall_at_k": {"1": r1, "3": r5, "5": r5}, "mrr_at_5": mrr,
             "precision_at_k": {"1": r1, "3": r5 / 3, "5": r5 / 5},
+            "todas_evidencias_at_k": {"1": bool(r1), "3": bool(r5), "5": bool(r5)},
         },
     }
 
@@ -61,11 +63,13 @@ def test_macros_correspondem_aos_resultados_brutos():
     assert m["MRRSlide"] == "1{,}00"
     assert m["MRRCPeqSem"] == "0{,}75"  # (1 + 1 + 0,5 + 0,5) / 4
     assert m["RecallUmCPeqSem"] == "0{,}50"
+    assert m["SucessoCincoCPeqSem"] == "1{,}00"
     assert m["DifMRRCPeqSem"] == "\\ensuremath{-}0{,}25"
     assert m["AbstencaoCorretaSlide"] == "100\\%"
     assert m["TokensEntradaCPeqSem"] == "500"
     assert m["MelhorMRRConfig"] == "Slide"
-    assert "\\textbf{1{,}00}" in tabela and tabela.count("\\\\") == 4  # dois cabeçalhos + 2 linhas
+    assert "R@1" not in tabela and "P@5" not in tabela and "F1" not in tabela
+    assert "Suc.@5" in tabela and "\\textbf{1{,}00}" in tabela
     assert {l["config_id"] for l in linhas} == set(CONFIGS)
 
 
@@ -83,6 +87,24 @@ def test_ic_contem_a_media_e_diferenca_pareada():
     assert d == dlo == dhi == 0.5  # diferença constante: IC degenerado
 
 
+def test_diferencas_de_sobreposicao_sao_pareadas_por_tamanho():
+    from src.config import CONFIG
+
+    rankings, brutos = [], []
+    for c in CONFIG.chunking.ids:
+        for i in range(4):
+            valor = 1.0 if c.endswith("o20") else 0.5
+            if c == "slide":
+                valor = 0.75
+            rankings.append(_ranking(c, f"q{i}", valor, valor, valor))
+            brutos.append(_bruto(c, f"q{i}"))
+    _, macros, _ = gerar(rankings, brutos, n_bootstrap=100)
+    m = _macros(macros)
+    assert m["DifOverlapRecallCincoCPeq"] == "0{,}50"
+    assert m["DifOverlapMRRCMedIC"] == "\\mbox{[0{,}50; 0{,}50]}"
+    assert m["NOverlapSucessoCincoCGrd"] == "4"
+
+
 def test_configuracoes_divergentes_entre_recuperacao_e_geracao():
     rankings, brutos = _dados()
     with pytest.raises(ReportError, match="configurações diferentes"):
@@ -96,6 +118,7 @@ def test_juizes_agregam_media_e_kappa():
     juizes = {"juiz-a": {"R1": notas, "R2": ruim}, "juiz-b": {"R1": notas, "R2": ruim}}
     agregado, kappas = resumo_juizes(juizes, chave)
     assert agregado["slide"]["correcao"] == 1.0 and agregado["c128-o0"]["fidelidade"] == 0.5
+    assert agregado["slide"]["completude"] == 1.0
     assert kappas["correcao"] == 1.0
     with pytest.raises(ReportError, match="dois juízes"):
         resumo_juizes({"juiz-a": juizes["juiz-a"]}, chave)
@@ -116,11 +139,15 @@ def test_escreve_arquivos(tmp_path):
 
 
 def test_f1_de_tokens_ignora_citacao_acento_e_palavras_vazias():
-    from src.report import f1_tokens
+    from src.report import f1_tokens, f1_tokens_v1
 
     assert f1_tokens("É a similaridade do cosseno [1].", "A similaridade do cosseno.") == 1.0
     assert f1_tokens("Não há informação.", "BLEU.") == 0.0
     assert 0 < f1_tokens("BLEU e ROUGE", "BLEU") < 1
+    # A variante corrigida distingue a negação; a v1 a removia.
+    assert f1_tokens("não supervisionado", "supervisionado") < f1_tokens_v1(
+        "não supervisionado", "supervisionado"
+    )
 
 
 def test_precisao_de_citacao_conta_so_trechos_com_evidencia():
@@ -137,4 +164,5 @@ def test_precisao_de_citacao_conta_so_trechos_com_evidencia():
     abst = base | {"pergunta_id": "q2", "abstencao": True, "citacoes": []}
     g = por_config_geracao([base, abst], {"q1": "x", "q2": "y"})["slide"]
     assert g["precisao_citacao"] == {"q1": 0.5}
-    assert set(g["f1"]) == {"q1", "q2"}
+    assert set(g["f1_tokens_v1"]) == {"q1", "q2"}
+    assert set(g["f1_lexical"]) == {"q1", "q2"}

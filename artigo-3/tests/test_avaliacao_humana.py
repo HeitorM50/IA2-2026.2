@@ -9,12 +9,14 @@ from conftest import GeradorFalso, RecuperadorFalso
 
 from src.avaliacao_humana import (
     AvaliacaoError,
-    classificar_falha,
+    classificar_desfecho,
     concordancia,
     divergencias,
     gerar_planilha_cega,
+    gerar_planilha_consenso,
     kappa_cohen,
     ler_avaliacao,
+    ler_consenso,
 )
 from src.geracao import responder
 
@@ -85,19 +87,46 @@ def test_nota_fora_da_rubrica_e_rejeitada(tmp_path):
 
 
 @pytest.mark.parametrize(
-    "respondivel, recuperou, abstencao, correcao, esperado",
+    "respondivel, cobertura, abstencao, correcao, esperado",
     [
-        (True, True, False, 2, "acerto"),
-        (True, True, False, 1, "falha_geracao"),
-        (True, True, True, 0, "falha_geracao"),
-        (True, False, False, 0, "falha_recuperacao"),
-        (True, False, False, 2, "acerto_sem_evidencia"),
-        (False, False, True, 0, "abstencao_correta"),
-        (False, False, False, 0, "resposta_inventada"),
+        (True, "completa", False, 2, "correta_cobertura_completa"),
+        (True, "parcial", False, 1, "incorreta_cobertura_parcial"),
+        (True, "completa", True, 0, "incorreta_cobertura_completa"),
+        (True, "ausente", False, 0, "incorreta_cobertura_ausente"),
+        (True, "ausente", False, 2, "correta_cobertura_ausente"),
+        (False, "ausente", True, 0, "abstencao_correta"),
+        (False, "ausente", False, 0, "resposta_inventada"),
     ],
 )
-def test_falha_de_recuperacao_separada_da_geracao(respondivel, recuperou, abstencao, correcao, esperado):
+def test_desfecho_combina_correcao_e_cobertura_sem_inferir_causa(respondivel, cobertura, abstencao, correcao, esperado):
     assert (
-        classificar_falha(respondivel=respondivel, recuperou_evidencia=recuperou, abstencao=abstencao, correcao=correcao)
+        classificar_desfecho(respondivel=respondivel, cobertura=cobertura, abstencao=abstencao, correcao=correcao)
         == esperado
     )
+
+
+def test_planilha_e_leitura_de_consenso(tmp_path):
+    base = tmp_path / "base.csv"
+    with base.open("w", newline="", encoding="utf-8") as f:
+        w = csv.writer(f)
+        w.writerow(["item", "pergunta", "resposta", "correcao", "completude", "fidelidade",
+                    "afirmacoes_nao_sustentadas", "observacao"])
+        w.writerow(["R1", "p1", "r1", "", "", "", "", ""])
+        w.writerow(["R2", "p2", "r2", "", "", "", "", ""])
+    a = _planilha(tmp_path, "a.csv", {"R1": (2, 2, 2, 0), "R2": (0, 1, 1, 2)})
+    b = _planilha(tmp_path, "b.csv", {"R1": (2, 2, 2, 0), "R2": (1, 1, 2, 2)})
+    destino = tmp_path / "consenso.csv"
+    assert gerar_planilha_consenso(base, a, b, destino) == 1
+    linhas = list(csv.DictReader(destino.open(encoding="utf-8")))
+    assert [l["item"] for l in linhas] == ["R2"]
+    assert "config_id" not in linhas[0]
+    linhas[0]["consenso_correcao"] = "1"
+    linhas[0]["consenso_fidelidade"] = "2"
+    with destino.open("w", newline="", encoding="utf-8") as f:
+        w = csv.DictWriter(f, fieldnames=linhas[0])
+        w.writeheader()
+        w.writerows(linhas)
+    consolidado = ler_consenso(destino, ler_avaliacao(a), ler_avaliacao(b))
+    assert consolidado["R1"]["correcao"] == 2
+    assert consolidado["R2"] == {"completude": 1, "afirmacoes_nao_sustentadas": 2,
+                                  "correcao": 1, "fidelidade": 2}
