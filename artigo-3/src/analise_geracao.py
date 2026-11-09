@@ -8,8 +8,8 @@ Três etapas, todas sobre ``results/raw/<split>/<config>/<pergunta>.json``:
    cobre só parte do teste.
 2. ``automaticas``: métricas que não dependem de avaliador — abstenção correta e
    indevida, uso de citação, citação a trecho inexistente, tokens e latência.
-3. ``desfechos``: junta a nota de consenso com a evidência no top-k e separa
-   falha de recuperação de falha de geração (`avaliacao_humana.classificar_falha`).
+3. ``desfechos``: junta a nota de consenso à cobertura das páginas-evidência e
+   produz categorias observáveis, sem atribuir causalmente o erro a um componente.
 
 Uso::
 
@@ -29,7 +29,7 @@ from collections import Counter, defaultdict
 from pathlib import Path
 from statistics import mean
 
-from src.avaliacao_humana import DESFECHOS, classificar_falha, gerar_planilha_cega, ler_avaliacao
+from src.avaliacao_humana import DESFECHOS, classificar_desfecho, gerar_planilha_cega, ler_avaliacao, ler_consenso
 from src.config import CONFIG, ExperimentoConfig
 
 RESULTADOS_DIR = Path(__file__).resolve().parent / "results"
@@ -54,14 +54,29 @@ def carregar_brutos(raiz: Path) -> list[dict]:
     return brutos
 
 
-def recuperou_evidencia(bruto: dict) -> bool:
-    """Algum trecho do top-k cobre alguma página de evidência válida da pergunta."""
+def cobertura_evidencias(bruto: dict) -> str:
+    """Classifica cobertura de páginas-evidência como completa/parcial/ausente.
+
+    Páginas múltiplas são alternativas em itens factuais/contextuais e são
+    obrigatórias em conjunto nos itens multitrecho.
+    """
     evidencias = {(int(a), int(p)) for a, p in bruto.get("evidencias_validas", [])}
-    return any(
-        (t["aula"], p) in evidencias
-        for t in bruto["trechos"]
+    recuperadas = {
+        (t["aula"], p)
+        for t in bruto.get("trechos", [])
         for p in range(t["pagina_inicio"], t["pagina_fim"] + 1)
-    )
+        if (t["aula"], p) in evidencias
+    }
+    if not evidencias or not recuperadas:
+        return "ausente"
+    if bruto.get("categoria") == "multitrecho" and not evidencias.issubset(recuperadas):
+        return "parcial"
+    return "completa"
+
+
+def recuperou_evidencia(bruto: dict) -> bool:
+    """Compatibilidade: indica se ao menos uma página-evidência foi coberta."""
+    return cobertura_evidencias(bruto) != "ausente"
 
 
 def amostrar_perguntas(brutos: list[dict], n: int, seed: int) -> list[str]:
@@ -135,9 +150,14 @@ def metricas_automaticas(brutos: list[dict]) -> dict[str, dict[str, float | int 
         rs = por_config[config_id]
         nao_resp = [r for r in rs if not r["respondivel"]]
         resp = [r for r in rs if r["respondivel"]]
-        substantivas = [r for r in rs if not r["abstencao"]]
+        substantivas = [r for r in resp if not r["abstencao"]]
+        com_citacao = [r for r in substantivas if r["citacoes"]]
         saida[config_id] = {
             "n": len(rs),
+            "n_respondiveis": len(resp),
+            "n_nao_respondiveis": len(nao_resp),
+            "n_respostas_substantivas": len(substantivas),
+            "n_respostas_com_citacao": len(com_citacao),
             "abstencao_correta": taxa(sum(r["abstencao"] for r in nao_resp), len(nao_resp)),
             "abstencao_indevida": taxa(sum(r["abstencao"] for r in resp), len(resp)),
             "abstencao_indevida_com_evidencia": taxa(
@@ -177,9 +197,9 @@ def desfechos(
         b = indice.get((pergunta_id, config_id))
         if b is None:
             raise AnaliseError(f"{item}: sem resultado bruto para {pergunta_id}/{config_id}.")
-        d = classificar_falha(
+        d = classificar_desfecho(
             respondivel=b["respondivel"],
-            recuperou_evidencia=recuperou_evidencia(b),
+            cobertura=cobertura_evidencias(b),
             abstencao=b["abstencao"],
             correcao=consenso[item]["correcao"],
         )
@@ -199,6 +219,8 @@ def main(argv: list[str] | None = None, cfg: ExperimentoConfig = CONFIG) -> int:
             s.add_argument("--destino", type=Path, default=AVALIACAO_DIR)
         if nome == "desfechos":
             s.add_argument("--consenso", type=Path, required=True)
+            s.add_argument("--avaliador1", type=Path, required=True)
+            s.add_argument("--avaliador2", type=Path, required=True)
             s.add_argument("--chave", type=Path, default=AVALIACAO_DIR / "chave.csv")
     a = p.parse_args(argv)
 
@@ -215,8 +237,9 @@ def main(argv: list[str] | None = None, cfg: ExperimentoConfig = CONFIG) -> int:
         if a.cmd == "automaticas":
             resultado = metricas_automaticas(brutos)
         else:
-            resultado = desfechos(brutos, ler_avaliacao(a.consenso), ler_chave(a.chave))
-    except AnaliseError as e:
+            av1, av2 = ler_avaliacao(a.avaliador1), ler_avaliacao(a.avaliador2)
+            resultado = desfechos(brutos, ler_consenso(a.consenso, av1, av2), ler_chave(a.chave))
+    except (AnaliseError, ValueError) as e:
         print(f"erro: {e}", file=sys.stderr)
         return 1
     print(json.dumps(resultado, indent=2, ensure_ascii=False))

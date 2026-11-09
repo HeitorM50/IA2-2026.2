@@ -7,7 +7,10 @@ Fluxo:
 2. Cada autor preenche a própria cópia seguindo `RUBRICA.md`.
 3. `concordancia` mede o kappa de Cohen por critério; `divergencias` lista os
    itens que precisam de consenso antes de entrar no artigo.
-4. `classificar_falha` separa falha de recuperação de falha de geração.
+4. `gerar_planilha_consenso` cria uma planilha só com as divergências e mantém
+   oculta a configuração experimental.
+5. `classificar_desfecho` descreve correção e cobertura de páginas-evidência
+   sem atribuir causalmente o erro ao recuperador ou ao gerador.
 """
 
 from __future__ import annotations
@@ -18,7 +21,6 @@ import json
 import hashlib
 import random
 from collections import Counter
-from dataclasses import dataclass
 from pathlib import Path
 
 # Critério -> valores aceitos. Escalas ordinais curtas para facilitar a concordância.
@@ -163,30 +165,99 @@ def divergencias(av1: dict[str, dict[str, int]], av2: dict[str, dict[str, int]])
     ]
 
 
-@dataclass(frozen=True)
-class Desfecho:
-    categoria: str
-    descricao: str
+def gerar_planilha_consenso(
+    planilha_base: Path,
+    avaliador1: Path,
+    avaliador2: Path,
+    destino: Path,
+) -> int:
+    """Grava somente itens divergentes, sem revelar pergunta/configuração da chave.
+
+    A planilha de saída conserva as colunas visíveis da planilha cega, mostra as
+    duas notas independentes e deixa quatro colunas ``consenso_*`` em branco.
+    """
+    av1, av2 = ler_avaliacao(avaliador1), ler_avaliacao(avaliador2)
+    if set(av1) != set(av2):
+        raise AvaliacaoError("Avaliações com itens diferentes não podem ir a consenso.")
+    itens = {item for item, *_ in divergencias(av1, av2)}
+    with planilha_base.open(encoding="utf-8") as f:
+        leitor = csv.DictReader(f)
+        visiveis = [c for c in (leitor.fieldnames or []) if c not in CAMPOS_AVALIADOR]
+        linhas = [l for l in leitor if l["item"] in itens]
+    if {l["item"] for l in linhas} != itens:
+        raise AvaliacaoError("A planilha-base não contém todos os itens divergentes.")
+    extras = [f"avaliador1_{c}" for c in RUBRICA] + [f"avaliador2_{c}" for c in RUBRICA]
+    consenso = [f"consenso_{c}" for c in RUBRICA]
+    destino.parent.mkdir(parents=True, exist_ok=True)
+    with destino.open("w", newline="", encoding="utf-8") as f:
+        w = csv.DictWriter(f, fieldnames=visiveis + extras + consenso + ["observacao_consenso"])
+        w.writeheader()
+        for l in linhas:
+            item = l["item"]
+            w.writerow(
+                {**{c: l[c] for c in visiveis},
+                 **{f"avaliador1_{c}": av1[item][c] for c in RUBRICA},
+                 **{f"avaliador2_{c}": av2[item][c] for c in RUBRICA}}
+            )
+    return len(linhas)
+
+
+def ler_consenso(caminho: Path, av1: dict[str, dict[str, int]], av2: dict[str, dict[str, int]]) -> dict[str, dict[str, int]]:
+    """Combina concordâncias automáticas com decisões explícitas das divergências."""
+    if set(av1) != set(av2):
+        raise AvaliacaoError("Avaliações com itens diferentes não podem ser consolidadas.")
+    resultado = {
+        item: {c: av1[item][c] for c in RUBRICA if av1[item][c] == av2[item][c]}
+        for item in av1
+    }
+    esperados = {(item, c) for item, c, *_ in divergencias(av1, av2)}
+    vistos: set[tuple[str, str]] = set()
+    with caminho.open(encoding="utf-8") as f:
+        for n_linha, linha in enumerate(csv.DictReader(f), start=2):
+            item = linha["item"]
+            if item not in resultado:
+                raise AvaliacaoError(f"{caminho.name}:{n_linha}: item desconhecido {item}.")
+            for criterio, aceitos in RUBRICA.items():
+                if (item, criterio) not in esperados:
+                    continue
+                bruto = (linha.get(f"consenso_{criterio}") or "").strip()
+                if not bruto:
+                    raise AvaliacaoError(
+                        f"{caminho.name}:{n_linha}: consenso de '{criterio}' em branco ({item})."
+                    )
+                valor = int(bruto)
+                if valor not in aceitos:
+                    raise AvaliacaoError(
+                        f"{caminho.name}:{n_linha}: consenso de '{criterio}'={valor} fora de {aceitos}."
+                    )
+                resultado[item][criterio] = valor
+                vistos.add((item, criterio))
+    faltando = esperados - vistos
+    if faltando:
+        raise AvaliacaoError(f"Consenso incompleto: {sorted(faltando)[:5]}.")
+    return resultado
 
 
 DESFECHOS = {
-    "acerto": "evidência recuperada e resposta correta",
-    "falha_recuperacao": "nenhuma evidência válida no top-k; o gerador não tinha como acertar",
-    "falha_geracao": "evidência recuperada, mas resposta incorreta ou abstenção indevida",
-    "acerto_sem_evidencia": "resposta correta sem evidência válida no top-k (conhecimento prévio ou evidência não anotada)",
+    "correta_cobertura_completa": "resposta correta com cobertura completa das páginas-evidência",
+    "correta_cobertura_parcial": "resposta correta com cobertura parcial das páginas-evidência",
+    "correta_cobertura_ausente": "resposta correta sem página-evidência no contexto",
+    "incorreta_cobertura_completa": "resposta incorreta com cobertura completa das páginas-evidência",
+    "incorreta_cobertura_parcial": "resposta incorreta com cobertura parcial das páginas-evidência",
+    "incorreta_cobertura_ausente": "resposta incorreta sem página-evidência no contexto",
     "abstencao_correta": "pergunta não respondível e o sistema se absteve",
     "resposta_inventada": "pergunta não respondível e o sistema respondeu",
 }
 
 
-def classificar_falha(*, respondivel: bool, recuperou_evidencia: bool, abstencao: bool, correcao: int) -> str:
-    """Atribui um desfecho de `DESFECHOS`; ``correcao`` usa a escala da rubrica (2 = correta)."""
+def classificar_desfecho(*, respondivel: bool, cobertura: str, abstencao: bool, correcao: int) -> str:
+    """Atribui um desfecho observável; ``correcao`` usa 2 para resposta correta."""
     if not respondivel:
         return "abstencao_correta" if abstencao else "resposta_inventada"
-    correta = correcao == 2 and not abstencao
-    if recuperou_evidencia:
-        return "acerto" if correta else "falha_geracao"
-    return "acerto_sem_evidencia" if correta else "falha_recuperacao"
+    if cobertura not in {"completa", "parcial", "ausente"}:
+        raise AvaliacaoError(f"Cobertura inválida: {cobertura!r}.")
+    estado = "correta" if correcao == 2 and not abstencao else "incorreta"
+    return f"{estado}_cobertura_{cobertura}"
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -195,7 +266,16 @@ def main(argv: list[str] | None = None) -> int:
     c = sub.add_parser("concordancia")
     c.add_argument("avaliador1", type=Path)
     c.add_argument("avaliador2", type=Path)
+    s = sub.add_parser("preparar-consenso")
+    s.add_argument("planilha_base", type=Path)
+    s.add_argument("avaliador1", type=Path)
+    s.add_argument("avaliador2", type=Path)
+    s.add_argument("destino", type=Path)
     a = p.parse_args(argv)
+    if a.cmd == "preparar-consenso":
+        n = gerar_planilha_consenso(a.planilha_base, a.avaliador1, a.avaliador2, a.destino)
+        print(f"{n} itens divergentes em {a.destino}")
+        return 0
     av1, av2 = ler_avaliacao(a.avaliador1), ler_avaliacao(a.avaliador2)
     print(json.dumps(concordancia(av1, av2), indent=2, ensure_ascii=False))
     div = divergencias(av1, av2)

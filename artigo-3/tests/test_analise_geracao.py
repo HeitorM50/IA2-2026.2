@@ -13,6 +13,7 @@ from src.analise_geracao import (
     AnaliseError,
     amostrar_perguntas,
     carregar_brutos,
+    cobertura_evidencias,
     desfechos,
     gerar_amostra,
     ler_chave,
@@ -24,7 +25,8 @@ CONFIGS = ("slide", "c256-o0")
 CATEGORIAS = {"factual": 6, "contextual": 3, "multitrecho": 2, "nao_respondivel": 1}
 
 
-def _bruto(qid, config, categoria, *, abstencao=False, citacoes=(1,), invalidas=(), paginas=(3, 3)):
+def _bruto(qid, config, categoria, *, abstencao=False, citacoes=(1,), invalidas=(), paginas=(3, 3),
+           evidencias=((15, 3),)):
     respondivel = categoria != "nao_respondivel"
     return {
         "pergunta_id": qid,
@@ -32,7 +34,7 @@ def _bruto(qid, config, categoria, *, abstencao=False, citacoes=(1,), invalidas=
         "pergunta": f"pergunta {qid}",
         "categoria": categoria,
         "respondivel": respondivel,
-        "evidencias_validas": [[15, 3]] if respondivel else [],
+        "evidencias_validas": [list(e) for e in evidencias] if respondivel else [],
         "trechos": [
             {"aula": 15, "pagina_inicio": paginas[0], "pagina_fim": paginas[1], "texto": "t"}
         ],
@@ -60,6 +62,25 @@ def test_evidencia_dentro_do_intervalo_de_paginas():
     assert recuperou_evidencia(_bruto("q", "c", "factual", paginas=(2, 4)))
     assert not recuperou_evidencia(_bruto("q", "c", "factual", paginas=(4, 6)))
     assert not recuperou_evidencia(_bruto("q", "c", "nao_respondivel"))
+
+
+def test_cobertura_completa_parcial_ausente_e_evidencias_alternativas():
+    # Em factual/contextual, uma das páginas anotadas é alternativa suficiente.
+    factual = _bruto("q", "c", "factual", paginas=(3, 3), evidencias=((15, 3), (15, 8)))
+    assert cobertura_evidencias(factual) == "completa"
+    contextual = factual | {"categoria": "contextual"}
+    assert cobertura_evidencias(contextual) == "completa"
+    # Em multitrecho, todas as páginas são obrigatórias.
+    multi = factual | {"categoria": "multitrecho"}
+    assert cobertura_evidencias(multi) == "parcial"
+    multi["trechos"] = [
+        {"aula": 15, "pagina_inicio": 3, "pagina_fim": 3, "texto": "a"},
+        {"aula": 15, "pagina_inicio": 8, "pagina_fim": 8, "texto": "b"},
+    ]
+    assert cobertura_evidencias(multi) == "completa"
+    assert cobertura_evidencias(_bruto("q", "c", "multitrecho", paginas=(9, 9),
+                                       evidencias=((15, 3), (15, 8)))) == "ausente"
+    assert cobertura_evidencias(_bruto("q", "c", "nao_respondivel")) == "ausente"
 
 
 def test_amostra_estratificada_deterministica_e_com_todas_as_categorias():
@@ -111,10 +132,12 @@ def test_metricas_automaticas_por_configuracao():
     assert m["abstencao_indevida_com_evidencia"] == pytest.approx(1 / 3)
     assert m["respostas_com_citacao"] == pytest.approx(1 / 2)
     assert m["respostas_com_citacao_invalida"] == pytest.approx(1 / 2)
+    assert m["n_respostas_substantivas"] == 2
+    assert m["n_respostas_com_citacao"] == 1
     assert m["tokens_entrada_medio"] == 100
 
 
-def test_desfechos_separam_recuperacao_de_geracao():
+def test_desfechos_descrevem_correcao_e_cobertura():
     brutos = [
         _bruto("a", "slide", "factual"),  # com evidência
         _bruto("b", "slide", "factual", paginas=(9, 9)),  # sem evidência
@@ -123,8 +146,8 @@ def test_desfechos_separam_recuperacao_de_geracao():
     chave = {"R1": ("a", "slide"), "R2": ("b", "slide"), "R3": ("c", "slide")}
     nota = lambda c: {"correcao": c, "completude": 0, "fidelidade": 0, "afirmacoes_nao_sustentadas": 0}
     d = desfechos(brutos, {"R1": nota(1), "R2": nota(0), "R3": nota(0)}, chave)["slide"]
-    assert d["falha_geracao"] == 1
-    assert d["falha_recuperacao"] == 1
+    assert d["incorreta_cobertura_completa"] == 1
+    assert d["incorreta_cobertura_ausente"] == 1
     assert d["resposta_inventada"] == 1
     assert sum(d.values()) == 3
 

@@ -1,13 +1,6 @@
-%==============================================================================
 % Artigo 3 - FGA0261 Inteligência Artificial II - 2026.2
-% Formato: IEEE conference (classe IEEEtran, máximo 4 páginas)
-% Entrega: 05/11/2026, pelo Microsoft Teams
-%
-% CONVENÇÃO DESTE ARQUIVO: uma frase por linha.
-% Compilar: make no Linux; .\build.ps1 no Windows sem Perl/latexmk.
-%==============================================================================
+% Compilar: .\build.ps1. O PDF original permanece fora deste build.
 \documentclass[conference]{IEEEtran}
-
 \usepackage[T1]{fontenc}
 \usepackage[utf8]{inputenc}
 \usepackage{cite}
@@ -15,188 +8,202 @@
 \usepackage{graphicx}
 \usepackage{booktabs}
 \usepackage{url}
-
 \graphicspath{{figs/}}
-
-% Rótulos em português sem babel (o pacote de português não está em todas as instalações).
 \renewcommand{\refname}{Referências}
 \renewcommand{\tablename}{Tabela}
 \renewcommand{\figurename}{Fig.}
 \renewcommand{\abstractname}{Resumo}
 \renewcommand{\IEEEkeywordsname}{Palavras-chave}
-
-% Gerado por src/report.py a partir dos JSON de src/results/.
-% NÃO editar à mão: todo número do artigo sai daqui.
 \input{results-generated.tex}
 
 \begin{document}
-
 \title{Influência do Tamanho e da Sobreposição de \textit{Chunks} na Recuperação e na Fidelidade de um Sistema RAG sobre Material Didático}
-
 \author{
 \IEEEauthorblockN{Gustavo Xavier Evangelista}
-\IEEEauthorblockA{\textit{FCTE - Faculdade de Ciências e Tecnologias em Engenharia} \\
-\textit{Universidade de Brasília} \\
+\IEEEauthorblockA{\textit{FCTE -- Universidade de Brasília} \\
 Brasília, Brasil \\
-Matrícula: 241025247 \\
 241025247@aluno.unb.br}
 \and
 \IEEEauthorblockN{Heitor Macêdo Ricardo}
-\IEEEauthorblockA{\textit{FCTE - Faculdade de Ciências e Tecnologias em Engenharia} \\
-\textit{Universidade de Brasília} \\
+\IEEEauthorblockA{\textit{FCTE -- Universidade de Brasília} \\
 Brasília, Brasil \\
-Matrícula: 241039073 \\
-241039073@aluno.unb.br}
-}
-
+241039073@aluno.unb.br}}
 \maketitle
 
 \begin{abstract}
-A segmentação do texto em trechos (\textit{chunks}) é uma decisão de projeto de sistemas de geração aumentada por recuperação (RAG) quase sempre tomada por heurística.
-Este trabalho compara sete estratégias de segmentação sobre os slides de \NAulasCorpus{} aulas de Inteligência Artificial em português: um trecho por slide, como linha de base estrutural, e janelas de 128, 256 e 512 tokens com e sem 20\,\% de sobreposição.
-Com o modelo de \textit{embedding}, o índice, o gerador e o \textit{prompt} fixos, \NPares{} pares configuração--pergunta foram avaliados sobre um conjunto de \NPerguntasTeste{} perguntas de teste publicado com DOI.
-A segmentação por slide obteve o maior MRR@5 (\MRRSlide), enquanto a janela de 512 tokens obteve o maior Recall@5 (\RecallCincoCGrdSem) ao custo de cerca de três vezes mais tokens de contexto e quase o dobro da latência de geração.
-Nas métricas de recuperação, nenhuma diferença pareada contra a linha de base teve intervalo de confiança de 95\,\% afastado de zero; a exceção foi a precisão das citações, que caiu de \PrecCitacaoSlide{} para \PrecCitacaoCGrdSem{} com trechos de 512 tokens.
-Todas as configurações se abstiveram corretamente nas perguntas sem resposta no material.
-Em uma amostra julgada por dois modelos de linguagem, as falhas de geração superaram as de recuperação, o que sugere que, neste corpus, a segmentação estrutural basta e o gargalo está no gerador.
+A divisão de documentos em trechos altera tanto a evidência recuperada quanto o contexto entregue a sistemas de geração aumentada por recuperação (RAG).
+Comparamos uma segmentação estrutural por slide e janelas de 128, 256 e 512 tokens, com 0 ou 20\,\% de sobreposição, em \NPerguntasTeste{} perguntas sobre \NAulasCorpus{} aulas em português.
+O recuperador, o gerador Qwen2.5-3B-Instruct e o orçamento de cinco trechos foram mantidos fixos.
+A segmentação por slide apresentou MRR@5 de \MRRSlide{}, enquanto a janela de 512 tokens sem sobreposição apresentou Recall@5 de \RecallCincoCGrdSem{}; esta última usou \TokensEntradaCGrdSem{} tokens de entrada do gerador em média, contra \TokensEntradaSlide{} com slides.
+As diferenças observadas entre 20\,\% e 0\,\% de sobreposição mudaram de sinal ou magnitude entre os tamanhos, sem indicar uma vantagem consistente.
+As conclusões se restringem a este corpus, ao gerador de 3 bilhões de parâmetros e a $k=\TopK$; os julgamentos automáticos de qualidade são apresentados como análise de sensibilidade.
 \end{abstract}
 
 \begin{IEEEkeywords}
-geração aumentada por recuperação, \textit{chunking}, recuperação de informação, alucinação, modelos de linguagem
+geração aumentada por recuperação, \textit{chunking}, recuperação de informação, fidelidade, modelos de linguagem
 \end{IEEEkeywords}
 
 \section{Introdução}
-A geração aumentada por recuperação (RAG, do inglês \textit{Retrieval-Augmented Generation}) condiciona um modelo de linguagem a trechos recuperados de uma base externa, o que permite responder com conhecimento atualizável e verificável~\cite{lewis2020rag}.
-Antes da indexação, os documentos precisam ser divididos em trechos (\textit{chunks}), e essa divisão determina o que o recuperador consegue encontrar e o que o gerador chega a ler.
-Trechos pequenos tendem a ser precisos, mas fragmentam explicações; trechos grandes preservam contexto, mas diluem o sinal semântico e alongam o \textit{prompt}~\cite{chen2024dense,liu2024lost}.
+RAG condiciona um modelo de linguagem a trechos recuperados de uma base externa, permitindo respostas apoiadas em fontes~\cite{lewis2020rag}.
+A segmentação define a unidade indexada e o conteúdo que chega ao gerador.
+Trechos pequenos podem fragmentar explicações; trechos grandes aumentam o contexto e podem reduzir o foco semântico.
+Estudos de granularidade confirmam que a unidade de recuperação afeta tarefas de busca e resposta~\cite{chen2024dense}.
 
-Material didático em slides é um caso particular: cada slide já é uma unidade semântica curta, o que sugere que a segmentação estrutural pode competir com janelas de tamanho fixo.
-A pergunta de pesquisa é: \textit{como o tamanho e a sobreposição dos trechos influenciam a recuperação da evidência correta, o custo do contexto e a qualidade da resposta de um sistema RAG sobre slides de aula em português?}
-
-Este trabalho contribui com:
-(i) a comparação de sete estratégias de segmentação sob protocolo idêntico, com a segmentação por slide como linha de base;
-(ii) um conjunto público de \NPerguntasTeste{} perguntas de teste e 15 de desenvolvimento com evidência por página~\cite{evangelista2026ragdataset};
-(iii) a separação entre falhas de recuperação e de geração, com intervalos de confiança por reamostragem.
+Slides oferecem uma linha de base natural: cada página costuma reunir um conceito, mas explicações podem atravessar páginas.
+Perguntamos: \textit{como tamanho e sobreposição dos trechos influenciam a recuperação de páginas-evidência, a verificabilidade e o custo de um RAG sobre slides em português?}
+Comparamos \NConfiguracoes{} configurações sob o mesmo protocolo e publicamos o conjunto de perguntas com evidências por página~\cite{evangelista2026ragdataset}.
 
 \section{Trabalhos Relacionados}
-\textit{Recuperação densa para RAG.}
-O RAG original combinou um recuperador denso a um gerador \textit{seq2seq}~\cite{lewis2020rag}, apoiado na recuperação densa de passagens por codificadores duplos~\cite{karpukhin2020dense}.
-Modelos de \textit{embedding} multilíngues, como o E5~\cite{wang2024multilingual}, e bibliotecas de busca por similaridade, como o FAISS~\cite{johnson2021billion}, tornaram esse arranjo reproduzível em português e em escala.
-Nesses trabalhos, a unidade de recuperação é tomada como dada, em geral passagens de tamanho fixo.
+O RAG original combinou recuperação densa e geração~\cite{lewis2020rag}; o DPR consolidou o uso de codificadores duplos para busca de passagens~\cite{karpukhin2020dense}.
+O E5 multilíngue fornece \textit{embeddings} para consultas e passagens~\cite{wang2024multilingual,e5modelcard}, e o FAISS permite busca exata por produto interno~\cite{johnson2021billion}.
+Dense X Retrieval mostrou que a granularidade indexada influencia a recuperação e a resposta sob um orçamento fixo~\cite{chen2024dense}.
+\textit{Lost in the Middle} identificou efeitos de posição em contextos longos, mas não estabelece, por si só, que todo trecho longo reduz qualidade~\cite{liu2024lost}.
 
-\textit{Granularidade da recuperação.}
-Chen \textit{et al.}~\cite{chen2024dense} mostraram que a unidade indexada (passagem, sentença ou proposição) altera o desempenho da recuperação e da resposta.
-Liu \textit{et al.}~\cite{liu2024lost} observaram que modelos de linguagem usam pior a informação posicionada no meio de contextos longos, o que penaliza trechos grandes mesmo quando a evidência é recuperada.
-
-\textit{Avaliação de RAG e alucinação.}
-Alucinação é a geração de conteúdo sem apoio na fonte~\cite{ji2023survey}; em RAG, mede-se a fidelidade da resposta ao contexto recuperado.
-O RAGAS~\cite{es2024ragas} automatiza essa avaliação com modelos de linguagem, e o uso de modelos como juízes apresenta boa concordância com humanos, mas com vieses conhecidos~\cite{zheng2023judging,panickssery2024llm}.
-
-Diferentemente desses trabalhos, este estudo isola a segmentação em um corpus didático em português, compara janelas fixas contra a estrutura nativa dos slides e reporta a incerteza de cada diferença.
+RAGAS organiza dimensões de avaliação automática de RAG~\cite{es2024ragas}.
+Modelos usados como juízes podem reproduzir preferências e vieses; sua concordância não substitui validação humana~\cite{zheng2023judging,panickssery2024llm}.
+Por isso, tratamos os julgamentos automáticos disponíveis como sensibilidade e evitamos atribuir causalmente cada erro ao recuperador ou ao gerador.
 
 \section{Metodologia}
-\subsection{Corpus e conjunto de avaliação}
-O corpus são os slides em PDF das aulas 14 a 23 da disciplina~\cite{soares2026aulas}, que cobrem processamento de linguagem natural e LLMs, aprendizado por reforço, explicabilidade e equidade, em \NPaginasCorpus{} páginas.
-O texto foi extraído por página com PyMuPDF, com recomposição de acentos separados pelo LaTeX e remoção do rodapé repetido; cada página guarda aula, número e SHA-256 do arquivo de origem.
+\subsection{Corpus, perguntas e configurações}
+O corpus contém \NPaginasCorpus{} páginas das aulas 14 a 23~\cite{soares2026aulas}.
+O conjunto tem 60 perguntas: 15 de desenvolvimento e \NPerguntasTeste{} de teste; no teste, \NRespondiveisTeste{} são respondíveis e \NNaoRespondiveisTeste{} não têm resposta no material.
+As evidências são pares (aula, página), definidas antes do teste.
+O texto foi extraído página a página, com recomposição de caracteres separados e remoção de rodapé repetido.
+Cada registro conserva o número da aula, a página e o hash do PDF de origem; páginas com pouco texto são sinalizadas para revisão, pois fórmulas e diagramas podem não ser recuperados pela extração textual.
+As perguntas foram distribuídas entre factual, contextual, multitrecho e não respondível.
+Uma resposta factual ou contextual pode aceitar páginas alternativas; uma pergunta multitrecho enumera páginas conjuntamente necessárias.
+Essa distinção impede que recuperar uma única parte de uma explicação composta seja contabilizado como cobertura completa.
 
-O conjunto de avaliação~\cite{evangelista2026ragdataset} tem 60 perguntas: 30 factuais, 15 contextuais, 10 que exigem múltiplos trechos e 5 sem resposta no corpus, com seis perguntas por aula.
-Cada pergunta tem resposta de referência e a lista de evidências válidas como pares (aula, página), e foi escrita por um autor e revisada pelo outro contra o texto extraído.
-A divisão em 15 perguntas de desenvolvimento e \NPerguntasTeste{} de teste foi fixada antes de qualquer experimento; o teste foi lido uma única vez.
+A configuração \texttt{slide} indexa uma página por trecho.
+As demais combinam 128, 256 e 512 tokens com 0 ou 20\,\% de sobreposição, sem atravessar aulas.
+Todas usam o E5 multilíngue base na revisão congelada d128750, com os prefixos recomendados e vetores normalizados~\cite{e5modelcard}.
+O $k$ foi selecionado no desenvolvimento entre 1, 3 e 5; o maior Recall médio resultou em $k=\TopK$.
 
-\subsection{Estratégias de segmentação}
-A linha de base estrutural (\texttt{slide}) indexa cada página como um trecho.
-As seis janelas fixas combinam 128, 256 e 512 tokens com sobreposição de 0 ou 20\,\%, contadas no tokenizador do próprio modelo de \textit{embedding}.
-As janelas não atravessam a fronteira entre aulas, e cada trecho registra o intervalo de páginas que cobre.
-Na configuração de 512 tokens, o prefixo do E5 e os tokens especiais podem levar a entrada a 516 posições, e o modelo trunca até quatro tokens finais; os manifestos dos índices contabilizam os trechos afetados.
+O gerador é o Qwen2.5-3B-Instruct de 3,09 bilhões de parâmetros, revisão aa8e725, em FP16 numa T4, com decodificação gulosa e até 256 novos tokens~\cite{qwen2025qwen25,qwenmodelcard}.
+O \textit{prompt} exige citações no formato $[n]$ e uma frase fixa de abstenção.
+Cada configuração recebe a mesma pergunta, o mesmo limite de saída e os cinco primeiros trechos de seu próprio ranking.
+Não há amostragem na decodificação; diferenças entre configurações decorrem do contexto recuperado e da maneira como o modelo determinístico reage a ele.
+O tempo é medido ao redor da preparação e da chamada do gerador depois que os modelos e índices já foram carregados, evitando misturar inicialização com inferência.
 
-\subsection{Recuperação e geração}
-O modelo de \textit{embedding}, comum a todas as configurações, é o E5 multilíngue base~\cite{wang2024multilingual} em revisão fixa, com os prefixos \texttt{query:} e \texttt{passage:}, vetores normalizados e busca exata por produto interno (\texttt{IndexFlatIP})~\cite{johnson2021billion}.
-O número de trechos passados ao gerador foi escolhido no desenvolvimento entre $k \in \{1, 3, 5\}$ pelo maior Recall médio, resultando em $k = \TopK$; como o Recall não decresce com $k$, a regra equivale a usar o maior orçamento de contexto considerado.
+\subsection{Métricas e análise}
+Recall@5 é a fração das páginas anotadas cobertas pelos cinco trechos; MRR@5 usa a posição da primeira evidência.
+Para itens factuais e contextuais, páginas anotadas alternativas definem sucesso@5 quando ao menos uma é recuperada.
+Para itens multitrecho, sucesso@5 exige todas as páginas obrigatórias; Multi@5 registra essa cobertura no subconjunto multitrecho.
+As métricas de recuperação usam somente as \NRespondiveisTeste{} perguntas respondíveis.
 
-O gerador é o Qwen2.5-3B-Instruct~\cite{qwen2025qwen25} em revisão fixa, com decodificação gulosa, no máximo 256 tokens de resposta e precisão de 16 bits em uma GPU T4.
-O \textit{prompt} delimita cada trecho por marcação com identificador, exige que cada afirmação cite o trecho que a sustenta e determina uma frase exata de abstenção quando o contexto não basta.
+Cobertura de citação é a fração das respostas respondíveis não abstidas que contêm citação.
+Relevância de citação é calculada apenas nas respostas com ao menos uma citação válida e mede a fração de trechos citados que cobre página-evidência.
+Os tokens medem a entrada completa do gerador.
+A latência inclui montagem e tokenização do \textit{prompt}, geração e decodificação; exclui busca e carregamento dos modelos.
+O F1 lexical publicado originalmente permanece no CSV para rastreabilidade, mas foi retirado da tabela por não medir adequadamente correção semântica.
 
-\subsection{Métricas e justificativa}
-A métrica principal de recuperação é o Recall@$k$, a fração das páginas-evidência presentes entre os $k$ trechos entregues ao gerador, porque uma evidência ausente do contexto não pode sustentar a resposta.
-O MRR@5 complementa o Recall por medir a posição da primeira evidência, relevante porque o gerador usa pior o que não está no início do contexto~\cite{liu2024lost}.
-Um trecho é relevante quando seu intervalo de páginas contém uma página-evidência, e perguntas sem resposta ficam fora dessas métricas.
-Também foram medidas a Precision@5 e, nas perguntas que exigem múltiplos trechos, a fração com todas as evidências no top-5 (Multi@5).
-Na geração, mediram-se a abstenção correta nas perguntas sem resposta, a fração de respostas com citação, os tokens de contexto e a latência, que compõem o custo de cada configuração.
-Duas métricas automáticas cobrem todas as \NPares{} respostas: a precisão de citação, fração dos trechos citados que contêm uma página-evidência, que mede se a resposta aponta para a fonte certa; e o F1 de tokens contra a resposta de referência, após remoção de acentos, citações e palavras vazias, um indicador grosseiro de correção que penaliza paráfrases.
-
-A qualidade da resposta foi avaliada em uma amostra de \NPerguntasAmostra{} perguntas de teste, sorteadas com estratificação por categoria, sob as sete configurações (\NItensJuizes{} itens).
-Por falta de tempo para a avaliação humana prevista, os itens foram julgados por dois modelos de linguagem independentes (Claude Opus e Claude Sonnet), sem acesso à configuração, com uma rubrica de correção, completude e fidelidade de 0 a 2 e contagem de afirmações sem apoio no contexto.
-A concordância entre os juízes foi medida pelo kappa de Cohen com pesos quadráticos~\cite{cohen1968weighted}, e cada item respondível foi classificado como acerto, falha de recuperação (evidência fora do top-$k$) ou falha de geração (evidência recuperada e resposta incorreta), usando a menor nota dos dois juízes.
-
-A semente 42 fixou o sorteio da amostra e as reamostragens, e as revisões dos modelos estão fixadas por \textit{hash} no código.
-Como a decodificação é determinística, a dispersão vem das perguntas: os intervalos de confiança de 95\,\% são percentis de \NBootstrap{} reamostragens \textit{bootstrap} das perguntas~\cite{efron1993introduction}, e as diferenças contra a linha de base são pareadas por pergunta.
-O código, os manifestos com SHA-256 e o \textit{commit} da execução estão em \url{https://github.com/HeitorM50/IA2-2026.2}.
+Para cada tamanho, a análise de sobreposição compara 20\,\% contra 0\,\% na mesma pergunta.
+Se $m_{q,c}$ é a métrica da pergunta $q$ na configuração $c$, o estimando é a média de $m_{q,t,20}-m_{q,t,0}$ para um tamanho $t$ fixo.
+O \textit{bootstrap} reamostra identificadores de pergunta, preservando o par em cada réplica; o intervalo percentil de 95\,\% usa \NBootstrap{} réplicas.
+Esse desenho estima a diferença observada no conjunto de perguntas e não um efeito causal da sobreposição, pois tamanho, posição das fronteiras e redundância dos slides interagem com o conteúdo.
+O protocolo completo prevê \textit{bootstrap} pareado por pergunta e avaliação humana independente, cega à configuração, seguida de kappa ponderado e consenso.
+Como os rankings individuais, as \NPares{} respostas e as planilhas humanas não estavam no pacote versionado, esta revisão não fabrica esses intervalos ou escores: apresenta os agregados recuperáveis e mantém a análise automática anterior apenas como sensibilidade.
+Os resultados antigos são preservados; o código valida o commit experimental \texttt{4f347d6}, os hashes, a grade e $k$ antes de aceitar uma reconstrução.
 
 \section{Resultados}
-A Tabela~\ref{tab:principal} resume as \NConfiguracoes{} configurações no teste.
+A Tabela~\ref{tab:principal} reorganiza os agregados disponíveis, retirando R@1, P@5 e F1.
 
 \begin{table*}[!t]
 \centering
-\caption{Recuperação, qualidade da resposta e custo no teste, por configuração (tamanho em tokens / sobreposição). Recuperação, Prec. cit. e F1 sobre \NRespondiveisTeste{} perguntas respondíveis; Multi@5: perguntas de múltiplos trechos com todas as evidências no top-5; Cit.: respostas com citação; Prec. cit.: trechos citados que contêm evidência; Corr. e Fid.: correção e fidelidade médias dos juízes em $[0, 1]$, sobre \NPerguntasAmostra{} perguntas; Tok.: tokens de contexto por pergunta; Lat.: latência de geração. Em negrito, o melhor valor de cada coluna.}
+\caption{Resultados disponíveis por configuração (tamanho/sobreposição). R@5 e MRR@5: \NRespondiveisTeste{} perguntas; Multi@5: subconjunto multitrecho; Cob. cit.: respostas respondíveis não abstidas; Rel. cit.: somente respostas com citação válida; Corr., Fid. e N. sust.: análise de sensibilidade por dois juízes automáticos, respectivamente em $[0,1]$, $[0,1]$ e escala truncada $0$--$3$; Tok. ent.: tokens de entrada do gerador.}
 \label{tab:principal}
-\small
-\input{tabela-principal.tex}
+\scriptsize
+\setlength{\tabcolsep}{2.8pt}
+\input{tabela-principal-revisada.tex}
 \end{table*}
 
-A segmentação por slide teve o maior R@1 (\RecallUmSlide) e o maior MRR@5 (\MRRSlide, IC \MRRSlideIC), e a janela de 512 tokens sem sobreposição teve o maior Recall@5 (\RecallCincoCGrdSem).
-As diferenças pareadas contra a linha de base foram pequenas diante da incerteza: a janela de 512 tokens ficou \DifRecallCincoCGrdSem{} acima em Recall@5 (IC \DifRecallCincoCGrdSemIC) e \DifMRRCGrdSem{} em MRR@5 (IC \DifMRRCGrdSemIC).
-O custo, por outro lado, separa as configurações com clareza: a janela de 512 tokens enviou em média \TokensEntradaCGrdSem{} tokens ao gerador, contra \TokensEntradaSlide{} da segmentação por slide, e a latência de geração subiu de \LatenciaGeracaoSlide{} para \LatenciaGeracaoCGrdSem{}~s (Fig.~\ref{fig:compromisso}).
+Slides obtiveram o maior MRR@5 (\MRRSlide{}, IC \MRRSlideIC).
+A janela de 512 tokens sem sobreposição obteve o maior Recall@5 (\RecallCincoCGrdSem{}), com diferença de \DifRecallCincoCGrdSem{} contra slides (IC \DifRecallCincoCGrdSemIC), mas MRR@5 \DifMRRCGrdSem{} menor (IC \DifMRRCGrdSemIC).
+Essas comparações descrevem valores observados e incerteza contra a linha de base; não demonstram equivalência.
+
+A Fig.~\ref{fig:sobreposicao} compara diretamente sobreposição dentro de cada tamanho.
+Os pontos não seguem direção única: o ganho observado de Recall@5 nas janelas de 128 e 256 tokens não se repete em 512 tokens, e Multi@5 cai em 128 tokens.
+Sem os rankings por pergunta, não se atribui intervalo pareado a esses pontos nem efeito causal à sobreposição.
+Em 128 tokens, Recall@5 passa de \RecallCincoCPeqSem{} para \RecallCincoCPeqCom{} e MRR@5 de \MRRCPeqSem{} para \MRRCPeqCom{}, enquanto Multi@5 passa de \TodasMultiCPeqSem{} para \TodasMultiCPeqCom{}.
+Em 256 tokens, os valores passam de \RecallCincoCMedSem{} para \RecallCincoCMedCom{} em Recall@5 e de \MRRCMedSem{} para \MRRCMedCom{} em MRR@5, com Multi@5 igual a \TodasMultiCMedSem{} nas duas condições.
+Em 512 tokens, Recall@5 cai de \RecallCincoCGrdSem{} para \RecallCincoCGrdCom{}, MRR@5 permanece em \MRRCGrdSem{} após arredondamento e Multi@5 permanece em \TodasMultiCGrdSem{}.
+O padrão não autoriza selecionar uma porcentagem de sobreposição independente do tamanho.
 
 \begin{figure}[!t]
 \centering
-\includegraphics[width=\columnwidth]{compromisso.pdf}
-\caption{MRR@5 contra o número médio de tokens de contexto por pergunta; barras indicam o IC de 95\,\% por \textit{bootstrap}. A linha de base por slide (quadrado) obtém a melhor ordenação com um dos menores custos.}
-\label{fig:compromisso}
+\includegraphics[width=\columnwidth]{sobreposicao-observada.pdf}
+\caption{Diferenças observadas entre 20\,\% e 0\,\% de sobreposição no mesmo tamanho. Pontos acima de zero favorecem 20\,\%; não há intervalos porque os rankings individuais não estavam no pacote versionado.}
+\label{fig:sobreposicao}
 \end{figure}
 
-Todas as configurações se abstiveram nas \NNaoRespondiveisTeste{} perguntas sem resposta (\AbstencaoCorretaSlide) e nenhuma citou trecho inexistente.
-A fração de respostas com citação caiu para \ComCitacaoCGrdCom{} na janela de 512 tokens com sobreposição, contra \ComCitacaoSlide{} na segmentação por slide.
-A precisão de citação separou as configurações com mais clareza: entre \NRespostasComCitacao{} respostas com citação, ela foi \PrecCitacaoSlide{} (IC \PrecCitacaoSlideIC) com slides e \PrecCitacaoCGrdSem{} (IC \PrecCitacaoCGrdSemIC) com janelas de 512 tokens sem sobreposição, uma diferença pareada de \DifPrecCitacaoCGrdSem{} (IC \DifPrecCitacaoCGrdSemIC), a única cujo intervalo exclui zero.
-O F1 de tokens ficou entre \FUmCGrdCom{} e \FUmSlide{} em todas as configurações, sem diferença relevante contra a linha de base (por exemplo, \DifFUmCGrdSem{}, IC \DifFUmCGrdSemIC, para 512 tokens).
-Por parte do curso (Fig.~\ref{fig:partes}), a maior diferença ocorreu em explicabilidade e equidade (Parte VII), onde o Recall@5 foi \RecallCincoSlideParteVII{} com slides e \RecallCincoCMedComParteVII{} com janelas de 256 tokens com sobreposição; nas Partes V e VI, todas as configurações ficaram próximas do teto.
-Nas perguntas de múltiplos trechos, a cobertura completa das evidências subiu de \TodasMultiSlide{} com slides para \TodasMultiCGrdSem{} com as janelas, sobre apenas oito perguntas.
+O custo cresce com o tamanho: 512/0 usa \TokensEntradaCGrdSem{} tokens de entrada e \LatenciaGeracaoCGrdSem{}~s, ante \TokensEntradaSlide{} e \LatenciaGeracaoSlide{}~s com slides.
+Esse aumento inclui mais texto no \textit{prompt} e maior trabalho de geração, mas não mede a busca vetorial; portanto, não representa a latência ponta a ponta de um serviço RAG.
+Na Fig.~\ref{fig:custo}, os intervalos marginais de MRR@5 se sobrepõem, enquanto o eixo de custo separa as janelas de 512 tokens das demais configurações.
 
 \begin{figure}[!t]
 \centering
-\includegraphics[width=\columnwidth]{recall-partes.pdf}
-\caption{Recall@5 por parte do curso e configuração. As janelas com sobreposição ou de 512 tokens recuperam melhor as evidências de explicabilidade e equidade (Parte VII).}
-\label{fig:partes}
+\includegraphics[width=\columnwidth]{compromisso-revisado.pdf}
+\caption{MRR@5 e IC de 95\,\% por \textit{bootstrap} de perguntas contra a média de tokens de entrada do gerador. Os intervalos são marginais; não testam a diferença entre configurações.}
+\label{fig:custo}
 \end{figure}
 
-Os juízes concordaram com kappa ponderado de \KappaCorrecao{} em correção e \KappaFidelidade{} em fidelidade, e as médias de correção variaram de \CorrecaoCGrdSem{} a \CorrecaoSlide{} entre configurações.
-Dos \NItensRespondiveisAmostra{} itens respondíveis da amostra, \NAcerto{} foram acertos, \NFalhaGeracao{} falhas de geração e \NFalhaRecuperacao{} falhas de recuperação, e nenhuma resposta foi inventada para pergunta sem resposta (Fig.~\ref{fig:desfechos}).
+Todas as configurações se abstiveram corretamente nos \NNaoRespondiveisTeste{} itens não respondíveis.
+A cobertura de citação variou de \ComCitacaoCGrdCom{} em 512/20 a \ComCitacaoCMedCom{} em 256/20.
+A relevância das citações foi \PrecCitacaoSlide{} com slides e \PrecCitacaoCGrdSem{} com 512/0; essa métrica não deve ser confundida com P@5 nem com cobertura de citação.
+P@5 divide o número de trechos recuperados que cobrem uma página-evidência por cinco, independentemente do que o gerador cita.
+Cobertura de citação pergunta se uma resposta substantiva contém referência; relevância examina somente os trechos efetivamente citados.
+Assim, uma configuração pode recuperar evidência, deixar de citá-la e ainda ter P@5 alto, ou citar poucos casos muito fáceis e obter relevância alta sobre um denominador menor.
+No par de 512 tokens, acrescentar sobreposição aumenta a média de tokens de \TokensEntradaCGrdSem{} para \TokensEntradaCGrdCom{} e a latência de \LatenciaGeracaoCGrdSem{} para \LatenciaGeracaoCGrdCom{}~s, sem recuperar o Recall@5 de 512/0.
+Nos pares de 128 e 256 tokens, a diferença de entrada é pequena diante da mudança de tamanho, indicando que o orçamento $k=5$ é o principal determinante do volume entregue ao gerador.
 
-\begin{figure}[!t]
-\centering
-\includegraphics[width=\columnwidth]{desfechos.pdf}
-\caption{Desfechos da amostra julgada (\NPerguntasAmostra{} perguntas por configuração), com a menor nota dos dois juízes. As falhas de geração predominam sobre as de recuperação em todas as configurações.}
-\label{fig:desfechos}
-\end{figure}
+Os julgamentos automáticos agregados indicam variação modesta de correção e fidelidade, mas não permitem decompor desfechos de modo válido sem as notas por item.
+A classificação revisada usa seis categorias respondíveis: resposta correta ou incorreta, cruzada com cobertura completa, parcial ou ausente.
+Perguntas não respondíveis são separadas em abstenção correta ou resposta inventada.
+Essa taxonomia registra dois fatos observáveis e evita chamar uma resposta errada com evidência presente de ``falha de geração'', pois o contexto pode ser ambíguo, a evidência pode estar truncada e a rubrica pode admitir discordância.
 
 \section{Discussão e Limitações}
-A vantagem da segmentação por slide na ordenação é coerente com o material: cada slide condensa um conceito, e as perguntas factuais têm, por construção do conjunto, a resposta em uma única página, de modo que o trecho estrutural casa semanticamente com a pergunta.
-As janelas maiores ganham Recall@5 porque cada trecho cobre várias páginas e conta como relevante se qualquer uma delas for evidência, o que também explica a menor precisão e o custo maior.
-Na Parte VII, uma explicação provável é que conteúdos distribuídos por slides consecutivos, como as tabelas comparativas de métricas, sejam mais bem cobertos por janelas que unem páginas vizinhas.
-Com trechos de 512 tokens, o gerador citou menos e, quando citou, apontou mais vezes para um trecho sem a evidência, embora trechos longos tenham mais chance de conter a página certa; isso é compatível com a dificuldade de modelos pequenos em localizar informação em contextos longos~\cite{liu2024lost} e afeta diretamente a verificabilidade da resposta.
-Como as falhas de geração superaram as de recuperação na amostra, ampliar o contexto tende a ter retorno limitado, e a hipótese a testar é que um gerador maior tenha efeito maior que a troca de segmentação.
+Os resultados mostram um compromisso: slides ordenam a primeira evidência melhor, enquanto 512/0 cobre mais páginas ao custo de uma entrada maior e citações menos relevantes.
+O efeito da sobreposição não é consistente entre tamanhos nos agregados observados.
+Nenhuma dessas associações identifica, isoladamente, a causa de uma resposta incorreta.
+A análise corrigida deve descrevê-la como correta ou incorreta com cobertura completa, parcial ou ausente.
 
-Exceto pela precisão de citação, o estudo não demonstra superioridade de nenhuma configuração: com \NRespondiveisTeste{} perguntas respondíveis, os intervalos das diferenças incluem zero ou tocam nele, e os resultados devem ser lidos como tendências.
-A evidência anotada por página favorece a segmentação por slide no MRR e as janelas longas no Recall, e as perguntas foram escritas pelos próprios autores a partir dos slides.
-A qualidade da resposta foi julgada por modelos de linguagem e não por humanos; juízes automáticos tendem a concordar entre si mais do que avaliadores humanos e podem compartilhar vieses~\cite{panickssery2024llm}, de modo que o kappa alto não garante validade, e a amostra de \NPerguntasAmostra{} perguntas não tem poder para comparar configurações.
-Por fim, o estudo usa um único corpus, um único gerador de 3 bilhões de parâmetros e uma execução determinística, e a regra de seleção de $k$ fixou o maior valor candidato.
+A evidência por página é um \textit{proxy}: favorece a unidade slide no ranqueamento e pode contar uma janela longa como relevante mesmo que só parte do trecho sustente a resposta.
+Além disso, dois trechos sobrepostos podem cobrir a mesma página sem acrescentar evidência independente.
+Recall@5 por páginas reduz parte dessa duplicação, mas o orçamento continua sendo expresso em trechos; configurações longas recebem mais tokens sob o mesmo $k$.
+Portanto, a comparação controla o número de itens recuperados, não o orçamento total de tokens, e a tabela deve ser lida junto com o custo de entrada.
+Há múltiplas comparações, apenas \NRespondiveisTeste{} perguntas respondíveis, poucas perguntas multitrecho e um orçamento fixo de \TopK{} trechos.
+As mesmas perguntas aparecem nas \NConfiguracoes{} configurações, exigindo análise pareada.
+A avaliação principal planejada usa somente \NPerguntasAmostra{} perguntas por configuração, em maioria respondíveis, e será feita pelos próprios autores; isso limita independência e poder estatístico mesmo após consenso.
+O estudo cobre um corpus, um modelo de \textit{embedding} e um gerador de 3 bilhões de parâmetros.
+Os escores automáticos disponíveis podem compartilhar vieses e permanecem análise de sensibilidade~\cite{panickssery2024llm}.
+O corpus é didático, visual e escrito em português; resultados podem mudar em textos corridos, documentos com seções longas ou bases em que a unidade semântica não coincide com uma página.
+O E5 foi usado sem ajuste ao domínio e o Qwen operou com um único \textit{prompt}; uma conclusão sobre \textit{chunking} não deve ser generalizada para recuperadores esparsos, reranqueadores ou geradores com outra janela e capacidade.
+
+Há ainda um risco de seleção na construção das perguntas.
+Os autores conheciam os slides e anotaram as páginas de resposta, embora a divisão de desenvolvimento e teste tenha sido congelada antes da execução.
+Uma avaliação externa deveria revisar uma amostra das evidências, medir concordância sobre sua suficiência e repetir o teste em outro conjunto de aulas.
+Como várias métricas e configurações são examinadas, intervalos individuais de 95\,\% não controlam o erro familiar; os resultados são exploratórios e devem priorizar magnitudes e consistência dos pares, não a busca isolada por intervalos que excluem zero.
+
+\subsection{Reprodutibilidade e validade}
+Os manifestos registram os SHA-256 do corpus, do conjunto de perguntas, da seleção de $k$ e do protocolo, além das revisões dos modelos e do commit da execução.
+O validador rejeita uma reconstrução se as \NConfiguracoes{} configurações, as \NPerguntasTeste{} perguntas, os \NPares{} pares ou o orçamento diferirem do experimento congelado.
+Resultados reconstruídos devem ser gravados em uma pasta nova para que tempo de execução, versões das bibliotecas e eventuais diferenças de hardware permaneçam distinguíveis da execução original.
+
+A amostra humana deve ser regenerada com a mesma semente e conter as \NConfiguracoes{} respostas para cada uma das \NPerguntasAmostra{} perguntas selecionadas.
+Os dois autores avaliam independentemente correção, completude e fidelidade em 0--2 e contam afirmações não sustentadas em 0--3, onde 3 significa três ou mais.
+Concordância exata e kappa ponderado são calculados antes de qualquer consenso; apenas divergências são expostas na planilha de resolução, ainda sem o identificador da configuração.
+Esse procedimento reduz contaminação entre julgamentos, mas não elimina o viés de autores que conhecem o corpus e formularam as perguntas.
+
+As respostas podem repetir as mesmas perguntas entre configurações, logo observações não são independentes em uma análise não pareada.
+Da mesma forma, a relevância de citações tem tamanho efetivo variável: respostas abstidas ou sem citação válida não entram em seu denominador.
+Publicar as contagens elegíveis por configuração é necessário para interpretar diferenças nessa métrica e evitar que uma taxa mais alta reflita apenas um subconjunto mais fácil.
 
 \section{Conclusão}
-Em slides de aula em português, a segmentação estrutural por slide recuperou a evidência nas primeiras posições tão bem quanto janelas de tamanho fixo e com um dos menores custos de contexto.
-Janelas longas aumentaram a cobertura das evidências, mas encareceram a geração e pioraram a precisão das citações, o que prejudica a verificação da resposta.
-O gargalo observado esteve mais no gerador do que na recuperação.
-Trabalhos futuros devem repetir o protocolo com mais perguntas, avaliação humana e geradores maiores.
+Neste corpus e com Qwen2.5-3B-Instruct e $k=\TopK$, slides apresentaram MRR@5 de \MRRSlide{} e 512/0 Recall@5 de \RecallCincoCGrdSem{}, acompanhados por custos de entrada e padrões de citação diferentes.
+A sobreposição de 20\,\% não mostrou vantagem observada consistente entre 128, 256 e 512 tokens.
+Esses resultados não sustentam que a segmentação estrutural seja suficiente, que o gerador seja o gargalo, ou que configurações sejam equivalentes.
+A conclusão definitiva sobre qualidade requer recuperar ou reconstruir os artefatos por pergunta e concluir a avaliação humana cega prevista.
 
 \bibliographystyle{IEEEtran}
 \bibliography{refs}
-
 \end{document}
